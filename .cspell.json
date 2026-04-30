@@ -1,0 +1,43 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "adobesign",
+    "airlineticketing",
+    "bestbuy",
+    "constantcontact",
+    "datadoghq",
+    "doordash",
+    "echosign",
+    "egift",
+    "eventbrite",
+    "facebookmail",
+    "godaddy",
+    "groupon",
+    "grubhub",
+    "hubspot",
+    "instacart",
+    "klaviyo",
+    "mailchimpapp",
+    "marketo",
+    "mktomail",
+    "mychart",
+    "namecheap",
+    "nytimes",
+    "paystub",
+    "postmates",
+    "quora",
+    "redditmail",
+    "revolut",
+    "robinhood",
+    "sendgrid",
+    "substack",
+    "venmo",
+    "waitlist",
+    "washingtonpost"
+  ],
+  "ignorePaths": [
+    "node_modules",
+    ".next"
+  ]
+}
