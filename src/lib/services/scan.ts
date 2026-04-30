@@ -7,6 +7,8 @@ import { encryptSecret } from "../security/crypto.ts";
 import { hashPii } from "../security/hash.ts";
 import type { AppStore } from "../storage/store.ts";
 import { newId, nowIso } from "../ids.ts";
+import { emitScanStarted, emitScanCompleted, emitPartialScan } from "../diagnostics.ts";
+import { costTracker, trackGmailApiCall, trackRetry } from "../scan-cache.ts";
 
 export const defaultScanQuery =
   "newer_than:90d (category:promotions OR list:* OR unsubscribe) -from:me";
@@ -28,19 +30,23 @@ function aggregateMessages(
     if (!sender) continue;
 
     const listUnsubscribe = getHeader(message.headers, "List-Unsubscribe");
+    const listUnsubscribePost = getHeader(message.headers, "List-Unsubscribe-Post");
     const listId = getHeader(message.headers, "List-ID");
     const precedence = getHeader(message.headers, "Precedence");
     const autoSubmitted = getHeader(message.headers, "Auto-Submitted");
+    const xMailer = getHeader(message.headers, "X-Mailer");
     const subject = getHeader(message.headers, "Subject");
     const key = sender.domain;
     const existing = grouped.get(key);
     const unsubscribeMethods = extractUnsubscribeMethods(listUnsubscribe);
+    const hasOneClick = /List-Unsubscribe=One-Click/i.test(listUnsubscribePost || "");
 
     if (existing) {
       existing.messageCount += 1;
       existing.messageIds.push(message.id);
       existing.hasListUnsubscribe =
         existing.hasListUnsubscribe || Boolean(listUnsubscribe);
+      existing.hasOneClickUnsubscribe = existing.hasOneClickUnsubscribe || hasOneClick;
       existing.bulkHeaders =
         existing.bulkHeaders ||
         Boolean(listId || /bulk|list|auto/i.test(`${precedence} ${autoSubmitted}`));
@@ -49,6 +55,7 @@ function aggregateMessages(
       ];
       existing.labelIds = [...new Set([...existing.labelIds, ...message.labelIds])];
       if (subject) existing.subjectHints?.push(subject);
+      if (xMailer && !existing.xMailer) existing.xMailer = xMailer;
       continue;
     }
 
@@ -58,10 +65,14 @@ function aggregateMessages(
       senderDisplayName: sender.displayName,
       messageCount: 1,
       hasListUnsubscribe: Boolean(listUnsubscribe),
+      hasOneClickUnsubscribe: hasOneClick,
       unsubscribeMethods,
       bulkHeaders: Boolean(
         listId || /bulk|list|auto/i.test(`${precedence} ${autoSubmitted}`),
       ),
+      precedenceHeader: precedence,
+      autoSubmittedHeader: autoSubmitted,
+      xMailer,
       labelIds: message.labelIds,
       subjectHints: subject ? [subject] : [],
       allowlistedDomains,
@@ -100,9 +111,18 @@ export async function runScan({
   };
   await store.createScanRun(scanRun);
 
+  emitScanStarted(userId, scanRun.id);
+
   try {
     const allowlist = await store.listAllowlist(userId);
+
+    const startTime = Date.now();
     const messages = await gmail.listRecentMessageHeaders({ query, maxMessages });
+    const elapsed = Date.now() - startTime;
+
+    trackGmailApiCall("messages_list");
+    trackRetry("messages_list", 0, elapsed, true);
+
     const aggregates = aggregateMessages(messages, allowlist);
     const createdAt = nowIso();
 
@@ -133,6 +153,12 @@ export async function runScan({
     });
 
     await store.saveCandidates(candidates);
+
+    costTracker.recordScanSize(
+      messages.length * 256,
+      candidates.length,
+    );
+
     const completed = {
       ...scanRun,
       status: "completed" as const,
@@ -146,6 +172,8 @@ export async function runScan({
     };
     await store.updateScanRun(completed);
 
+    emitScanCompleted(userId, scanRun.id, candidates.length);
+
     return { ...completed, candidates };
   } catch (error) {
     const appError =
@@ -158,6 +186,7 @@ export async function runScan({
             degraded: true,
             status: 502,
           });
+
     const failed = {
       ...scanRun,
       status: "failed" as const,
@@ -166,6 +195,11 @@ export async function runScan({
       finishedAt: nowIso(),
     };
     await store.updateScanRun(failed);
+
+    if (appError.code === "GMAIL_QUOTA_LIMITED") {
+      emitPartialScan(userId, scanRun.id, appError.message);
+    }
+
     throw appError;
   }
 }

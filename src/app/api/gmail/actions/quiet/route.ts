@@ -1,8 +1,10 @@
-import { handleApiError, jsonOk, readJsonBody } from "@/lib/api";
+import { handleApiError, readJsonBody, buildSharedResponse } from "@/lib/api";
 import { requireGmailClient } from "@/lib/auth/connection";
 import { AppError } from "@/lib/errors";
 import { quietSenders } from "@/lib/services/quiet";
 import { getStore } from "@/lib/storage";
+import { emitQuietStarted, emitQuietCompleted, emitQuietPartial } from "@/lib/diagnostics";
+import { hashValue } from "@inbox-exorcist/shared-core/hashing";
 
 export const runtime = "nodejs";
 
@@ -25,6 +27,10 @@ export async function POST(request: Request) {
     }
     const store = getStore();
     const { userId, gmail, connection } = await requireGmailClient(store);
+
+    const candidates = await store.listCandidates(body.scanId, userId);
+    emitQuietStarted(userId, body.scanId, body.candidateIds?.length ?? candidates.length);
+
     const summary = await quietSenders({
       userId,
       scanRunId: body.scanId,
@@ -35,7 +41,30 @@ export async function POST(request: Request) {
       allowHttpsUnsubscribe: body.allowHttpsUnsubscribe ?? true,
       allowMailtoUnsubscribe: body.allowMailtoUnsubscribe ?? false,
     });
-    return jsonOk(summary, { degraded: summary.warnings.length > 0 });
+
+    if (summary.failedFilters > 0) {
+      emitQuietPartial(userId, body.scanId, `${summary.failedFilters} filters failed`);
+    } else {
+      emitQuietCompleted(userId, body.scanId, summary.quietedSenders);
+    }
+
+    const userIdHash = hashValue(userId);
+    return buildSharedResponse({
+      quietedSenders: summary.quietedSenders,
+      messagesArchivedOrLabeled: summary.messagesArchivedOrLabeled,
+      filtersCreated: summary.filtersCreated,
+      unsubscribeAttempts: summary.unsubscribeAttemptsSent,
+      skippedForSafety: summary.skippedForSafety,
+      failedFilters: summary.failedFilters,
+      warnings: summary.warnings,
+      undoAvailable: true,
+    }, {
+      degraded: summary.warnings.length > 0,
+      score: 100,
+      reasons: summary.warnings.map((w) => w.message),
+      resultId: `quiet_${body.scanId}`,
+      diagnosticsId: userIdHash,
+    });
   } catch (error) {
     return handleApiError(error);
   }

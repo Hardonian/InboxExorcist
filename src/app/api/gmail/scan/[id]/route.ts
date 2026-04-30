@@ -1,7 +1,9 @@
-import { handleApiError, jsonOk } from "@/lib/api";
+import { handleApiError } from "@/lib/api";
+import { buildSharedResponse } from "@/lib/api";
 import { requireUserId } from "@/lib/auth/connection";
 import { AppError } from "@/lib/errors";
 import { getStore } from "@/lib/storage";
+import { emitPreviewViewed } from "@/lib/diagnostics";
 
 export const runtime = "nodejs";
 
@@ -22,7 +24,35 @@ export async function GET(
       });
     }
     const candidates = await store.listCandidates(id, userId);
-    return jsonOk({ ...scan, candidates }, { degraded: scan.degraded });
+
+    emitPreviewViewed(userId, id);
+
+    const noisySenders = candidates.filter(
+      (c) => c.proposedAction === "QUIET_BY_FILTER" || c.proposedAction === "UNSUBSCRIBE_THEN_FILTER",
+    );
+    const reviewSenders = candidates.filter(
+      (c) => c.proposedAction === "REVIEW",
+    );
+    const protectedSenders = candidates.filter(
+      (c) => c.proposedAction === "SKIP" && c.protectedReason,
+    );
+
+    return buildSharedResponse({
+      noisySenders,
+      reviewSenders,
+      protectedSenders,
+      scanId: scan.id,
+      status: scan.status,
+      messageCount: scan.messageCount,
+      candidateCount: scan.candidateCount,
+      selectedCount: scan.selectedCount,
+      skippedCount: scan.skippedCount,
+    }, {
+      degraded: scan.degraded,
+      score: candidates.reduce((sum, c) => sum + c.score, 0) / Math.max(1, candidates.length),
+      reasons: candidates.flatMap((c) => c.reasons),
+      resultId: scan.id,
+    });
   } catch (error) {
     return handleApiError(error);
   }

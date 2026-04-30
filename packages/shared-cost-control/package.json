@@ -1,0 +1,13 @@
+{
+  "name": "@inbox-exorcist/shared-cost-control",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./types": "./src/types.ts",
+    "./tracker": "./src/tracker.ts",
+    "./gmail-buckets": "./src/gmail-buckets.ts",
+    "./retry-costs": "./src/retry-costs.ts",
+    "./cache-stats": "./src/cache-stats.ts"
+  }
+}

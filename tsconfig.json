@@ -20,7 +20,12 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@inbox-exorcist/shared-core/*": ["./packages/shared-core/src/*"],
+      "@inbox-exorcist/shared-intelligence/*": ["./packages/shared-intelligence/src/*"],
+      "@inbox-exorcist/shared-diagnostics/*": ["./packages/shared-diagnostics/src/*"],
+      "@inbox-exorcist/shared-cost-control/*": ["./packages/shared-cost-control/src/*"],
+      "@inbox-exorcist/shared-infra/*": ["./packages/shared-infra/src/*"]
     }
   },
   "include": [

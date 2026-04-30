@@ -1,0 +1,13 @@
+{
+  "name": "@inbox-exorcist/shared-infra",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./cache": "./src/cache.ts",
+    "./dedupe": "./src/dedupe.ts",
+    "./circuit-breaker": "./src/circuit-breaker.ts",
+    "./rate-limit": "./src/rate-limit.ts",
+    "./health": "./src/health.ts"
+  }
+}

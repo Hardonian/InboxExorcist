@@ -29,6 +29,18 @@ npm run verify
 
 `npm run verify` runs lint, typecheck, unit/integration tests, HTTP smoke tests, and build.
 
+## Shared Backend Platform
+
+InboxExorcist integrates a shared backend/intelligence platform via five packages under `/packages/`:
+
+- **@inbox-exorcist/shared-core**: Typed result contracts, error envelopes, degraded states, idempotency, hashing, safe logging, validation
+- **@inbox-exorcist/shared-intelligence**: Signal registry, failure registry, confidence/scoring engines, evidence model, adapter interface, automation hooks
+- **@inbox-exorcist/shared-diagnostics**: Diagnostic CRM records, user/session/run records, issue timeline, support-safe event logs, product usage diagnostics
+- **@inbox-exorcist/shared-cost-control**: Request cost tracking, Gmail API call buckets, retry cost tracking, cache hit/miss tracking
+- **@inbox-exorcist/shared-infra**: Cache interface, in-flight dedupe, circuit breaker, rate limiting, structured logs, health checks
+
+See `docs/shared-core-integration.md` for full details.
+
 ## Local Setup
 
 ```bash

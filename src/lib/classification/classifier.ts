@@ -1,4 +1,9 @@
+import { computeScore, clampScore } from "@inbox-exorcist/shared-intelligence/scoring";
+import { calculateConfidence } from "@inbox-exorcist/shared-intelligence/confidence";
+import { createEvidence } from "@inbox-exorcist/shared-intelligence/evidence";
+import type { Signal, EvidenceItem, ConfidenceResult, ScoringResult } from "@inbox-exorcist/shared-intelligence/types";
 import type { Classification, ProposedAction } from "../domain.ts";
+import { emailSignals } from "../intelligence/email-signals.ts";
 
 export type SenderEvidence = {
   senderDomain: string;
@@ -6,8 +11,12 @@ export type SenderEvidence = {
   senderDisplayName?: string;
   messageCount: number;
   hasListUnsubscribe: boolean;
+  hasOneClickUnsubscribe: boolean;
   unsubscribeMethods: Array<"https" | "mailto">;
   bulkHeaders: boolean;
+  precedenceHeader?: string;
+  autoSubmittedHeader?: string;
+  xMailer?: string;
   labelIds: string[];
   subjectHints?: string[];
   allowlistedDomains?: string[];
@@ -22,92 +31,45 @@ export type ClassificationResult = {
   proposedAction: ProposedAction;
   selectedByDefault: boolean;
   protectedReason?: string;
+  signals: Signal[];
+  evidence: EvidenceItem[];
+  confidence: ConfidenceResult;
 };
 
 const financialTerms = [
-  "bank",
-  "credit",
-  "card",
-  "paypal",
-  "stripe",
-  "square",
-  "venmo",
-  "amex",
-  "visa",
-  "mastercard",
-  "discover",
-  "capitalone",
-  "chase",
-  "citi",
-  "wellsfargo",
-  "intuit",
-  "quickbooks",
-  "tax",
-  "irs",
+  "bank", "credit", "card", "paypal", "stripe", "square", "venmo",
+  "amex", "visa", "mastercard", "discover", "capitalone", "chase",
+  "citi", "wellsfargo", "intuit", "quickbooks", "tax", "irs",
 ];
 
 const healthcareLegalGovTerms = [
-  "health",
-  "clinic",
-  "hospital",
-  "mychart",
-  "pharmacy",
-  "legal",
-  "law",
-  "court",
-  "gov",
-  "government",
-  "school",
-  "university",
-  "college",
-  "employer",
-  "workday",
+  "health", "clinic", "hospital", "mychart", "pharmacy",
+  "legal", "law", "court", "gov", "government", "school",
+  "university", "college", "employer", "workday",
 ];
 
 const securityTerms = [
-  "password",
-  "reset",
-  "login",
-  "2fa",
-  "mfa",
-  "verification",
-  "verify",
-  "security",
-  "alert",
-  "suspicious",
+  "password", "reset", "login", "2fa", "mfa", "verification",
+  "verify", "security", "alert", "suspicious",
 ];
 
 const transactionalTerms = [
-  "receipt",
-  "invoice",
-  "order",
-  "shipping",
-  "delivered",
-  "tracking",
-  "statement",
-  "payment",
-  "refund",
-  "appointment",
-  "reservation",
-  "ticket",
+  "receipt", "invoice", "order", "shipping", "delivered", "tracking",
+  "statement", "payment", "refund", "appointment", "reservation", "ticket",
 ];
 
 const promoTerms = [
-  "sale",
-  "discount",
-  "deal",
-  "coupon",
-  "newsletter",
-  "offer",
-  "promo",
-  "promotion",
-  "digest",
-  "weekly",
-  "product update",
-  "launch",
-  "clearance",
-  "limited time",
+  "sale", "discount", "deal", "coupon", "newsletter", "offer", "promo",
+  "promotion", "digest", "weekly", "product update", "launch", "clearance", "limited time",
 ];
+
+const financialSenderDomains = new Set([
+  "paypal.com", "stripe.com", "square.com", "venmo.com",
+]);
+
+const securitySenderDomains = new Set([
+  "accounts.google.com", "login.microsoftonline.com", "amazonaws.com",
+]);
 
 function includesAny(text: string, terms: string[]) {
   return terms.some((term) => text.includes(term));
@@ -125,11 +87,14 @@ function normalizeEvidenceText(evidence: SenderEvidence) {
     .toLowerCase();
 }
 
-export function classifySender(evidence: SenderEvidence): ClassificationResult {
-  const text = normalizeEvidenceText(evidence);
-  const reasons: string[] = [];
-  let score = 0;
+function findSignal(id: string): Signal {
+  const s = emailSignals.find((sig: Signal) => sig.id === id);
+  if (!s) throw new Error(`Signal not found: ${id}`);
+  return s;
+}
 
+function buildSignals(evidence: SenderEvidence, text: string): Signal[] {
+  const signals: Signal[] = [];
   const isAllowlisted = evidence.allowlistedDomains?.some(
     (domain) =>
       evidence.senderDomain === domain ||
@@ -137,126 +102,197 @@ export function classifySender(evidence: SenderEvidence): ClassificationResult {
   );
 
   if (evidence.hasListUnsubscribe) {
-    score += 25;
-    reasons.push("List-Unsubscribe header exists");
+    signals.push(findSignal("email:list-unsubscribe"));
+  }
+
+  if (evidence.hasOneClickUnsubscribe) {
+    signals.push(findSignal("email:one-click-unsubscribe"));
   }
 
   if (evidence.messageCount >= 8) {
-    score += 20;
-    reasons.push("High send frequency");
+    signals.push(findSignal("email:high-frequency"));
   } else if (evidence.messageCount >= 4) {
-    score += 10;
-    reasons.push("Moderate send frequency");
+    signals.push(findSignal("email:moderate-frequency"));
   }
 
   if (includesAny(text, promoTerms)) {
-    score += 15;
-    reasons.push("Promotional language detected");
+    signals.push(findSignal("email:promo-language"));
   }
 
   if (evidence.labelIds.includes("CATEGORY_PROMOTIONS")) {
-    score += 10;
-    reasons.push("Gmail promotional category");
+    signals.push(findSignal("email:gmail-promotions"));
   }
 
   if (/no-?reply|donotreply|do-not-reply|mailer/.test(text)) {
-    score += 10;
-    reasons.push("No-reply or mailer sender pattern");
+    signals.push(findSignal("email:no-reply-pattern"));
   }
 
   if (evidence.bulkHeaders) {
-    score += 10;
-    reasons.push("Bulk/list headers present");
+    signals.push(findSignal("email:bulk-headers"));
   }
+
+  if (evidence.precedenceHeader && /bulk|list/i.test(evidence.precedenceHeader)) {
+    signals.push(findSignal("email:precedence-bulk"));
+  }
+
+  if (evidence.autoSubmittedHeader && /auto/i.test(evidence.autoSubmittedHeader)) {
+    signals.push(findSignal("email:auto-submitted"));
+  }
+
+  if (evidence.xMailer && /mailchimp|sendgrid|ses|postmark/i.test(evidence.xMailer.toLowerCase())) {
+    signals.push(findSignal("email:x-mailer-bulk"));
+  }
+
+  const textWithDomain = `${text} ${evidence.senderDomain}`.toLowerCase();
+
+  if (includesAny(textWithDomain, financialTerms) || financialSenderDomains.has(evidence.senderDomain)) {
+    signals.push(findSignal("email:financial-protected"));
+  }
+
+  if (includesAny(textWithDomain, securityTerms) || securitySenderDomains.has(evidence.senderDomain)) {
+    signals.push(findSignal("email:security-protected"));
+  }
+
+  if (includesAny(textWithDomain, transactionalTerms)) {
+    signals.push(findSignal("email:transactional-protected"));
+  }
+
+  if (includesAny(textWithDomain, healthcareLegalGovTerms)) {
+    signals.push(findSignal("email:institution-protected"));
+  }
+
+  if (evidence.recentHumanReply || evidence.userEngaged) {
+    signals.push(findSignal("email:personal-reply"));
+  }
+
+  if (isAllowlisted) {
+    signals.push(findSignal("email:allowlist"));
+  }
+
+  if (text.includes("newsletter") || text.includes("digest")) {
+    signals.push(findSignal("email:newsletter-digest"));
+  }
+
+  return signals;
+}
+
+function buildEvidence(evidence: SenderEvidence): EvidenceItem[] {
+  const items: EvidenceItem[] = [];
+
+  if (evidence.hasListUnsubscribe) {
+    items.push(createEvidence("header", "List-Unsubscribe", "email-header", "high"));
+  }
+  if (evidence.bulkHeaders) {
+    items.push(createEvidence("header", "Bulk headers", "email-header", "medium"));
+  }
+  if (evidence.labelIds.includes("CATEGORY_PROMOTIONS")) {
+    items.push(createEvidence("category", "Gmail Promotions", "gmail-label", "high"));
+  }
+  if (evidence.messageCount >= 8) {
+    items.push(createEvidence("frequency", `High: ${evidence.messageCount} messages`, "scan", "medium"));
+  }
+
+  return items;
+}
+
+export function classifySender(evidence: SenderEvidence): ClassificationResult {
+  const text = normalizeEvidenceText(evidence);
+  const signals = buildSignals(evidence, text);
+  const evidenceItems = buildEvidence(evidence);
+
+  const scoringResult: ScoringResult = computeScore({
+    signals,
+    baseScore: 0,
+    minScore: 0,
+    maxScore: 100,
+  });
+
+  const clampedScore = clampScore(scoringResult.score);
+  const confidence = calculateConfidence(clampedScore, scoringResult.breakdown);
+
+  const reasons = scoringResult.breakdown;
+
+  const isAllowlisted = evidence.allowlistedDomains?.some(
+    (domain) =>
+      evidence.senderDomain === domain ||
+      evidence.senderDomain.endsWith(`.${domain}`),
+  );
+
+  const textWithDomain = `${text} ${evidence.senderDomain}`.toLowerCase();
+
+  const isFinancial = includesAny(textWithDomain, financialTerms) || financialSenderDomains.has(evidence.senderDomain);
+  const isSecurity = includesAny(textWithDomain, securityTerms) || securitySenderDomains.has(evidence.senderDomain);
+  const isTransactional = includesAny(textWithDomain, transactionalTerms);
+  const isInstitution = includesAny(textWithDomain, healthcareLegalGovTerms);
+  const isPersonal = evidence.recentHumanReply || evidence.userEngaged;
 
   let protectedReason: string | undefined;
   let classification: Classification | undefined;
 
-  if (includesAny(text, financialTerms)) {
-    score -= 40;
+  if (isFinancial) {
     protectedReason = "Financial or tax sender";
     classification = "FINANCIAL_SAFE_SKIP";
-    reasons.push("Financial/security-sensitive keyword");
   }
 
-  if (includesAny(text, securityTerms)) {
-    score -= 40;
+  if (isSecurity) {
     protectedReason = protectedReason || "Account security sender";
     classification = "ACCOUNT_SECURITY_SAFE_SKIP";
-    reasons.push("Password, login, or security keyword");
   }
 
-  if (includesAny(text, transactionalTerms)) {
-    score -= 30;
+  if (isTransactional) {
     protectedReason = protectedReason || "Transactional sender";
     classification = classification || "TRANSACTIONAL_SAFE_SKIP";
-    reasons.push("Receipt, invoice, shipping, or order keyword");
   }
 
-  if (includesAny(text, healthcareLegalGovTerms)) {
-    score -= 30;
+  if (isInstitution) {
     protectedReason = protectedReason || "Healthcare, legal, school, employer, or government sender";
     classification = classification || "UNKNOWN_REVIEW";
-    reasons.push("Protected institution keyword");
   }
 
-  if (evidence.recentHumanReply || evidence.userEngaged) {
-    score -= 30;
+  if (isPersonal) {
     protectedReason = protectedReason || "Recent human engagement";
     classification = "PERSONAL_SAFE_SKIP";
-    reasons.push("Recent human reply or engagement signal");
   }
 
   if (isAllowlisted) {
-    score -= 50;
     protectedReason = protectedReason || "User allowlist";
     classification = "PERSONAL_SAFE_SKIP";
-    reasons.push("User allowlisted domain");
   }
 
-  const clampedScore = Math.max(0, Math.min(100, score));
+  let proposedAction: ProposedAction;
+  let selectedByDefault = false;
 
   if (protectedReason) {
-    return {
-      classification: classification || "UNKNOWN_REVIEW",
-      score: clampedScore,
-      reasons,
-      proposedAction: clampedScore >= 50 ? "REVIEW" : "SKIP",
-      selectedByDefault: false,
-      protectedReason,
-    };
-  }
-
-  if (clampedScore >= 80) {
+    proposedAction = clampedScore >= 50 ? "REVIEW" : "SKIP";
+    selectedByDefault = false;
+  } else if (clampedScore >= 80) {
     const isNewsletter = text.includes("newsletter") || text.includes("digest");
-    return {
-      classification: isNewsletter
-        ? "NEWSLETTER_HIGH_CONFIDENCE"
-        : "PROMOTIONAL_HIGH_CONFIDENCE",
-      score: clampedScore,
-      reasons,
-      proposedAction: evidence.hasListUnsubscribe
-        ? "UNSUBSCRIBE_THEN_FILTER"
-        : "QUIET_BY_FILTER",
-      selectedByDefault: true,
-    };
-  }
-
-  if (clampedScore >= 50) {
-    return {
-      classification: "UNKNOWN_REVIEW",
-      score: clampedScore,
-      reasons,
-      proposedAction: "REVIEW",
-      selectedByDefault: false,
-    };
+    classification = isNewsletter
+      ? "NEWSLETTER_HIGH_CONFIDENCE"
+      : "PROMOTIONAL_HIGH_CONFIDENCE";
+    proposedAction = evidence.hasListUnsubscribe
+      ? "UNSUBSCRIBE_THEN_FILTER"
+      : "QUIET_BY_FILTER";
+    selectedByDefault = true;
+  } else if (clampedScore >= 50) {
+    classification = "UNKNOWN_REVIEW";
+    proposedAction = "REVIEW";
+    selectedByDefault = false;
+  } else {
+    classification = "UNKNOWN_REVIEW";
+    proposedAction = "SKIP";
+    selectedByDefault = false;
   }
 
   return {
-    classification: "UNKNOWN_REVIEW",
+    classification: classification || "UNKNOWN_REVIEW",
     score: clampedScore,
     reasons,
-    proposedAction: "SKIP",
-    selectedByDefault: false,
+    proposedAction,
+    selectedByDefault,
+    protectedReason,
+    signals,
+    evidence: evidenceItems,
+    confidence,
   };
 }

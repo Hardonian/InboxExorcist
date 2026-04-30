@@ -1,0 +1,16 @@
+{
+  "name": "@inbox-exorcist/shared-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./types": "./src/types.ts",
+    "./signals": "./src/signals.ts",
+    "./confidence": "./src/confidence.ts",
+    "./scoring": "./src/scoring.ts",
+    "./evidence": "./src/evidence.ts",
+    "./adapter": "./src/adapter.ts",
+    "./automation": "./src/automation.ts",
+    "./failure-registry": "./src/failure-registry.ts"
+  }
+}
