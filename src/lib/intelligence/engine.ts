@@ -132,7 +132,7 @@ export class IntelligenceEngine {
       return (subject.includes('code') || subject.includes('otp')) && /\d{4,8}/.test(body);
     }
     if (edge.id === 'EC_CAL_001') {
-      return email.has_attachments && (email.attachment_types?.includes('text/calendar') || email.attachment_types?.includes('application/ics'));
+      return !!(email.has_attachments && (email.attachment_types?.includes('text/calendar') || email.attachment_types?.includes('application/ics')));
     }
     // Add more specific logic for other edge cases as they are refined
     return false;
