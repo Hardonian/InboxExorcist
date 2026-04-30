@@ -1,11 +1,11 @@
-import { classifySender, type SenderEvidence } from "../classification/classifier";
-import type { ScanRunWithCandidates, SenderCandidate } from "../domain";
-import { AppError } from "../errors";
-import { getHeader, parseSender, extractUnsubscribeMethods } from "../gmail/headers";
-import type { GmailClient, GmailMessageHeader } from "../gmail/client";
-import { hashPii } from "../security/hash";
-import type { AppStore } from "../storage/store";
-import { newId, nowIso } from "../ids";
+import { classifySender, type SenderEvidence } from "../classification/classifier.ts";
+import type { ScanRunWithCandidates, SenderCandidate } from "../domain.ts";
+import { AppError } from "../errors.ts";
+import { getHeader, parseSender, extractUnsubscribeMethods } from "../gmail/headers.ts";
+import type { GmailClient, GmailMessageHeader } from "../gmail/client.ts";
+import { hashPii } from "../security/hash.ts";
+import type { AppStore } from "../storage/store.ts";
+import { newId, nowIso } from "../ids.ts";
 
 export const defaultScanQuery =
   "newer_than:90d (category:promotions OR list:* OR unsubscribe) -from:me";

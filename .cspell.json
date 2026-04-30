@@ -36,7 +36,12 @@
     "undoable",
     "venmo",
     "waitlist",
-    "washingtonpost"
+    "washingtonpost",
+    "capitalone",
+    "wellsfargo",
+    "quickbooks",
+    "donotreply",
+    "citi"
   ],
   "ignorePaths": [
     "node_modules",
