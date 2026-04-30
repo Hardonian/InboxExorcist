@@ -1,8 +1,8 @@
-import { AppError } from "../errors";
-import { getHeader, type GmailHeader } from "./headers";
-import { mapGmailError } from "./error-map";
-import type { UnsubscribeOption } from "../unsubscribe/engine";
-import { extractUnsubscribeTargets } from "./headers";
+import { AppError } from "../errors.ts";
+import { getHeader, type GmailHeader } from "./headers.ts";
+import { mapGmailError } from "./error-map.ts";
+import type { UnsubscribeOption } from "../unsubscribe/engine.ts";
+import { extractUnsubscribeTargets } from "./headers.ts";
 
 export type GmailMessageHeader = {
   id: string;

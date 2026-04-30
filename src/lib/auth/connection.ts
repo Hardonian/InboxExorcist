@@ -1,10 +1,10 @@
-import { AppError } from "../errors";
-import { GmailHttpClient } from "../gmail/client";
-import { refreshGoogleAccessToken } from "../gmail/oauth";
-import { decryptSecret, encryptSecret } from "../security/crypto";
-import { getSessionUserId } from "../security/session";
-import type { AppStore } from "../storage/store";
-import { nowIso } from "../ids";
+import { AppError } from "../errors.ts";
+import { GmailHttpClient } from "../gmail/client.ts";
+import { refreshGoogleAccessToken } from "../gmail/oauth.ts";
+import { decryptSecret, encryptSecret } from "../security/crypto.ts";
+import { getSessionUserId } from "../security/session.ts";
+import type { AppStore } from "../storage/store.ts";
+import { nowIso } from "../ids.ts";
 
 export async function requireUserId() {
   const userId = await getSessionUserId();

@@ -1,10 +1,10 @@
-import { getRuntimeConfig } from "../config";
-import type { GmailConnection } from "../domain";
-import { AppError } from "../errors";
-import { encryptSecret, decryptSecret } from "../security/crypto";
-import { hashPii } from "../security/hash";
-import { buildRequestedScopes, hasRequiredScopes } from "./scopes";
-import { newId, nowIso } from "../ids";
+import { getRuntimeConfig } from "../config.ts";
+import type { GmailConnection } from "../domain.ts";
+import { AppError } from "../errors.ts";
+import { encryptSecret, decryptSecret } from "../security/crypto.ts";
+import { hashPii } from "../security/hash.ts";
+import { buildRequestedScopes, hasRequiredScopes } from "./scopes.ts";
+import { newId, nowIso } from "../ids.ts";
 
 type TokenResponse = {
   access_token: string;

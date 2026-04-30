@@ -1,4 +1,4 @@
-import { validateUnsubscribeUrl } from "./url";
+import { validateUnsubscribeUrl } from "./url.ts";
 
 export type UnsubscribeOption = {
   method: "https" | "mailto";
