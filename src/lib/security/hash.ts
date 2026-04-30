@@ -1,6 +1,6 @@
 import { createHmac } from "node:crypto";
 
-import { isProduction } from "../config";
+import { isProduction } from "../config.ts";
 
 function getHashSecret() {
   const secret =

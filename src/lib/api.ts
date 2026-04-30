@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { AppError, errorEnvelope, okEnvelope, toAppError } from "./errors";
+import { AppError, errorEnvelope, okEnvelope, toAppError } from "./errors.ts";
 
 export function jsonOk<T>(
   data: T,

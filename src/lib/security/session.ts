@@ -2,7 +2,7 @@ import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
 import { cookies } from "next/headers";
 
-import { isProduction } from "../config";
+import { isProduction } from "../config.ts";
 
 export const sessionCookieName = "ie_session";
 export const oauthStateCookieName = "ie_oauth_state";

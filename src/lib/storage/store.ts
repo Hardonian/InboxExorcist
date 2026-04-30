@@ -6,7 +6,7 @@ import type {
   SenderAction,
   SenderCandidate,
   UnsubscribeAttempt,
-} from "../domain";
+} from "../domain.ts";
 
 export type AppStore = {
   health(): Promise<{ mode: "memory" | "supabase"; degraded: boolean }>;

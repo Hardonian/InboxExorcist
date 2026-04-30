@@ -5,7 +5,7 @@ import {
   randomBytes,
 } from "node:crypto";
 
-import { isProduction } from "../config";
+import { isProduction } from "../config.ts";
 
 function getEncryptionKey() {
   const configured = process.env.TOKEN_ENCRYPTION_KEY;

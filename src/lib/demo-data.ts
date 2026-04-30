@@ -1,5 +1,5 @@
-import type { ScanRunWithCandidates, SenderCandidate } from "./domain";
-import { newId, nowIso } from "./ids";
+import type { ScanRunWithCandidates, SenderCandidate } from "./domain.ts";
+import { newId, nowIso } from "./ids.ts";
 
 export function getDemoScan(): ScanRunWithCandidates {
   const userId = "demo-user";

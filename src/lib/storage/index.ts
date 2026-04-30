@@ -1,7 +1,7 @@
-import { getRuntimeConfig } from "../config";
-import { MemoryStore } from "./memory-store";
-import type { AppStore } from "./store";
-import { SupabaseRestStore } from "./supabase-rest-store";
+import { getRuntimeConfig } from "../config.ts";
+import { MemoryStore } from "./memory-store.ts";
+import type { AppStore } from "./store.ts";
+import { SupabaseRestStore } from "./supabase-rest-store.ts";
 
 let store: AppStore | null = null;
 

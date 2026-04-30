@@ -1,4 +1,4 @@
-import type { ScanRunWithCandidates } from "./domain";
+import type { ScanRunWithCandidates } from "./domain.ts";
 
 export function mockScan(): ScanRunWithCandidates {
   const now = new Date().toISOString();

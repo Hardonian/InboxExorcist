@@ -1,4 +1,4 @@
-import type { ApiErrorEnvelope, ApiSuccessEnvelope } from "./domain";
+import type { ApiErrorEnvelope, ApiSuccessEnvelope } from "./domain.ts";
 
 export class AppError extends Error {
   code: string;
