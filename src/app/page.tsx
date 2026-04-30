@@ -52,7 +52,7 @@ export default function Home() {
             <div className="absolute -left-8 top-8 h-20 w-20 rounded-full border border-[#17150f]/10 bg-[#f4c542]" />
             <div className="relative overflow-hidden rounded-lg border border-[#17150f]/15 bg-[#17150f] p-4 shadow-2xl">
               <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3 text-white">
-                <span className="font-semibold">Scan -> Preview -> Quiet</span>
+                <span className="font-semibold">Scan &rarr; Preview &rarr; Quiet</span>
                 <span className="rounded bg-[#d7ff7a] px-2 py-1 text-xs font-bold text-[#17150f]">
                   undoable
                 </span>

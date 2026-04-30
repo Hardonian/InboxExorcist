@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# InboxExorcist
 
-## Getting Started
+InboxExorcist is a one-function B2C app:
 
-First, run the development server:
+Connect Gmail -> identify junk/promotional senders -> unsubscribe where safe -> create reversible Gmail filters/labels to silence future noise.
+
+It is not a general inbox assistant, budgeting tool, billing-cancellation product, or financial-access app.
+
+## MVP Flow
+
+1. Landing page: "Your inbox has demons. Exorcise them."
+2. Google OAuth.
+3. Scan recent Gmail headers only.
+4. Preview high-confidence noisy senders, review senders, and protected skips.
+5. One click quieting with Gmail label/filter creation.
+6. Standards-first unsubscribe attempts where safe.
+7. Success screen and reversible action log.
+
+## Commands
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm run lint
+npm run typecheck
+npm run test
+npm run test:e2e
+npm run build
+npm run verify
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`npm run verify` runs lint, typecheck, unit/integration tests, HTTP smoke tests, and build.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Local Setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+cp .env.example .env.local
+npm install
+npm run dev
+```
 
-## Learn More
+Google OAuth is required for live Gmail behavior. Without Google credentials, `/api/auth/google/start` redirects to a configured degraded error page and `/api/health` reports degraded.
 
-To learn more about Next.js, take a look at the following resources:
+## Data Posture
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+InboxExorcist does not store full email bodies, attachments, or message snippets. It stores minimal operational data: user id, encrypted Gmail account email, hashed sender emails, sender domains, classifications, action results, reversible Gmail filter/label ids, aggregate counts, timestamps, and audit events.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Supabase Postgres is supported through the REST store when `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are set. Without Supabase, the app runs in degraded in-memory mode for local smoke testing only.
 
-## Deploy on Vercel
+## Gmail Scopes
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `openid email profile`: identify the connected Gmail account.
+- `gmail.modify`: list/search messages, read metadata headers, apply/remove labels, and archive messages without deleting them.
+- `gmail.settings.basic`: create reversible Gmail filters.
+- `gmail.send`: optional only when `GMAIL_ENABLE_MAILTO_UNSUBSCRIBE=true`; not requested by default.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+See `docs/gmail-scope-rationale.md`.
+
+## Payment Gate
+
+The MVP is free-first. Pricing is documented as:
+
+- Free scan
+- $5 one-time clean
+- $3/month ongoing protection
+
+Stripe should remain behind `NEXT_PUBLIC_ENABLE_PAYMENTS=true` until the Gmail flow is live-verified.

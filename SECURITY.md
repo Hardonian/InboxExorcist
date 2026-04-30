@@ -1,15 +1,31 @@
-# Security Policy
+# Security
 
-## Reporting a Vulnerability
-We take the security of your inbox seriously. If you discover a security vulnerability within InboxExorcist, please send an email to security@inboxexorcist.com.
+## Principles
 
-## Security Invariants
-1. **No Persistence of PII**: We do not store raw email addresses. We use salted SHA-256 hashes for sender identification.
-2. **Token Encryption**: All Google OAuth tokens (Access/Refresh) are encrypted at rest using AES-256-GCM.
-3. **Restricted Scopes**: We only request the minimum required Gmail API scopes. We do not request `https://mail.google.com/` (full access).
-4. **No-Delete Policy**: Our code contains no logic to call the Gmail `messages.delete` or `threads.delete` endpoints.
+- Least-privilege Gmail access.
+- No email body, snippet, attachment, or credential logging.
+- No deleting by default.
+- Fail closed for protected sender classes.
+- Every action is auditable and reversible where Gmail exposes reversible ids.
 
-## Data Handling
-- **Database**: We use Supabase with Row Level Security (RLS) enabled.
-- **Encryption Keys**: Managed via environment variables and never checked into source control.
-- **Session Management**: Secure, HTTP-only cookies with CSRF protection.
+## Secrets
+
+Production requires:
+
+- `SESSION_SECRET`
+- `PII_HASH_SECRET`
+- `TOKEN_ENCRYPTION_KEY`
+- `GOOGLE_CLIENT_ID`
+- `GOOGLE_CLIENT_SECRET`
+
+OAuth access and refresh tokens are encrypted with AES-256-GCM before storage. Gmail account email is encrypted; sender email is hashed.
+
+## Gmail Safety
+
+InboxExorcist uses metadata/header reads to classify senders. Quieting creates a Gmail label and filter that skips inbox and applies `InboxExorcist/Quieted`. It does not delete messages.
+
+Unsubscribe uses standards-first mechanisms. HTTPS unsubscribe URLs are validated, private/internal targets are blocked, redirects are not followed blindly, no credentials are entered, and no arbitrary JavaScript is executed.
+
+## Incident Contact
+
+Until a public security mailbox exists, route reports through the repository owner. Rotate Google OAuth secrets and `TOKEN_ENCRYPTION_KEY` after any suspected token exposure.
