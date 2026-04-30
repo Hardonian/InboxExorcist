@@ -41,7 +41,7 @@ InboxExorcist is currently in the late infrastructure phase. While core library 
 
 ## 5. Launch Recommendation
 
-**NO-GO**. 
+**NO-GO**.
 The repository is a high-quality library but not yet a deployable application. Immediate focus is on implementing the minimal route set and documentation.
 
 ---
