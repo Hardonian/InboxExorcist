@@ -1,7 +1,7 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert';
 import { IntelligenceEngine } from '../../src/lib/intelligence/engine.ts';
-import { EmailMetadata, IntelligenceConfig, SafetyRule } from '../../src/lib/intelligence/types.ts';
+import type { EmailMetadata, IntelligenceConfig, SafetyRule } from '../../src/lib/intelligence/types.ts';
 
 describe('IntelligenceEngine Unit Tests', () => {
   const mockConfig: IntelligenceConfig = {
