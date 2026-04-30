@@ -7,6 +7,7 @@ import type {
   SenderCandidate,
   UnsubscribeAttempt,
 } from "../domain.ts";
+import { decryptSecret } from "../security/crypto.ts";
 import type { AppStore } from "./store.ts";
 
 type MemoryData = {
@@ -85,15 +86,33 @@ export class MemoryStore implements AppStore {
   }
 
   async listCandidates(scanRunId: string, userId: string) {
-    return [...data().candidates.values()].filter(
-      (candidate) =>
-        candidate.scanRunId === scanRunId && candidate.userId === userId,
-    );
+    return [...data().candidates.values()]
+      .filter((candidate) => candidate.scanRunId === scanRunId && candidate.userId === userId)
+      .map((candidate) => {
+        if (candidate.senderDisplayNameEncrypted && !candidate.senderDisplayName) {
+          try {
+            candidate.senderDisplayName = decryptSecret(candidate.senderDisplayNameEncrypted);
+          } catch {
+            // fallback
+          }
+        }
+        return candidate;
+      });
   }
 
   async getCandidate(candidateId: string, userId: string) {
     const candidate = data().candidates.get(candidateId);
-    return candidate?.userId === userId ? candidate : null;
+    if (candidate?.userId === userId) {
+      if (candidate.senderDisplayNameEncrypted && !candidate.senderDisplayName) {
+        try {
+          candidate.senderDisplayName = decryptSecret(candidate.senderDisplayNameEncrypted);
+        } catch {
+          // fallback
+        }
+      }
+      return candidate;
+    }
+    return null;
   }
 
   async recordActions(input: {

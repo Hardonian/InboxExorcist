@@ -44,7 +44,7 @@ create table if not exists sender_candidates (
   user_id text not null references users(id) on delete cascade,
   sender_domain text not null,
   sender_email_hash text,
-  sender_display_name text,
+  sender_display_name_encrypted text,
   classification text not null,
   score integer not null,
   reasons text[] not null default '{}',

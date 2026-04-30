@@ -7,6 +7,7 @@ import type {
   SenderCandidate,
   UnsubscribeAttempt,
 } from "../domain.ts";
+import { decryptSecret } from "../security/crypto.ts";
 import type { AppStore } from "./store.ts";
 
 type Json = Record<string, unknown>;
@@ -143,7 +144,11 @@ export class SupabaseRestStore implements AppStore {
     if (candidates.length === 0) return;
     await request("sender_candidates", {
       method: "POST",
-      body: candidates.map((candidate) => snakeObject(candidate as unknown as Json)),
+      body: candidates.map((candidate) => {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { senderDisplayName, ...rest } = candidate;
+        return snakeObject(rest as unknown as Json);
+      }),
     });
   }
 
@@ -151,14 +156,37 @@ export class SupabaseRestStore implements AppStore {
     const rows = await request<Json>("sender_candidates", {
       query: `?scan_run_id=eq.${encodeURIComponent(scanRunId)}&user_id=eq.${encodeURIComponent(userId)}&order=score.desc`,
     });
-    return rows.map((row) => camelObject<SenderCandidate>(row));
+    return rows.map((row) => {
+      const candidate = camelObject<SenderCandidate>(row);
+      if (candidate.senderDisplayNameEncrypted) {
+        try {
+          candidate.senderDisplayName = decryptSecret(
+            candidate.senderDisplayNameEncrypted,
+          );
+        } catch {
+          // fallback to domain if decryption fails
+        }
+      }
+      return candidate;
+    });
   }
 
   async getCandidate(candidateId: string, userId: string) {
     const rows = await request<Json>("sender_candidates", {
       query: `?id=eq.${encodeURIComponent(candidateId)}&user_id=eq.${encodeURIComponent(userId)}&limit=1`,
     });
-    return rows[0] ? camelObject<SenderCandidate>(rows[0]) : null;
+    if (!rows[0]) return null;
+    const candidate = camelObject<SenderCandidate>(rows[0]);
+    if (candidate.senderDisplayNameEncrypted) {
+      try {
+        candidate.senderDisplayName = decryptSecret(
+          candidate.senderDisplayNameEncrypted,
+        );
+      } catch {
+        // fallback
+      }
+    }
+    return candidate;
   }
 
   async recordActions(input: {

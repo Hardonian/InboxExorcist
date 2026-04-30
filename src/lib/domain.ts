@@ -84,6 +84,7 @@ export type SenderCandidate = {
   userId: string;
   senderDomain: string;
   senderEmailHash?: string;
+  senderDisplayNameEncrypted?: string;
   senderDisplayName?: string;
   classification: Classification;
   score: number;

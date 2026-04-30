@@ -26,6 +26,7 @@ const child = spawn(
   ["run", "dev", "--", "--port", String(port)],
   {
     stdio: ["ignore", "pipe", "pipe"],
+    shell: true,
     env: {
       ...process.env,
       NEXT_TELEMETRY_DISABLED: "1",

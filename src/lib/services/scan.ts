@@ -3,6 +3,7 @@ import type { ScanRunWithCandidates, SenderCandidate } from "../domain.ts";
 import { AppError } from "../errors.ts";
 import { getHeader, parseSender, extractUnsubscribeMethods } from "../gmail/headers.ts";
 import type { GmailClient, GmailMessageHeader } from "../gmail/client.ts";
+import { encryptSecret } from "../security/crypto.ts";
 import { hashPii } from "../security/hash.ts";
 import type { AppStore } from "../storage/store.ts";
 import { newId, nowIso } from "../ids.ts";
@@ -114,6 +115,9 @@ export async function runScan({
         senderDomain: aggregate.senderDomain,
         senderEmailHash: aggregate.senderEmail
           ? hashPii(aggregate.senderEmail)
+          : undefined,
+        senderDisplayNameEncrypted: aggregate.senderDisplayName
+          ? encryptSecret(aggregate.senderDisplayName)
           : undefined,
         senderDisplayName: aggregate.senderDisplayName,
         classification: result.classification,
