@@ -66,7 +66,7 @@ export default function Home() {
         </div>
 
         <div className="relative">
-          <div className="absolute -inset-4 bg-gradient-to-tr from-purple-500/20 to-indigo-500/20 blur-3xl rounded-[3rem]"></div>
+          <div className="absolute -inset-4 bg-linear-to-tr from-purple-500/20 to-indigo-500/20 blur-3xl rounded-[3rem]"></div>
           <div className="relative rounded-3xl overflow-hidden border border-zinc-200 dark:border-zinc-800 shadow-2xl">
             <Image 
               src="/hero.png" 
