@@ -1,4 +1,4 @@
-import { 
+import type { 
   EmailMetadata, 
   IntelligenceConfig, 
   IntelligenceReport, 
@@ -6,7 +6,7 @@ import {
   SenderPattern, 
   EdgeCase,
   Decision
-} from './types';
+} from './types.ts';
 
 export class IntelligenceEngine {
   private config: IntelligenceConfig;

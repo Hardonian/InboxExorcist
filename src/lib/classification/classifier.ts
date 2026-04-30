@@ -1,4 +1,4 @@
-import type { Classification, ProposedAction } from "../domain";
+import type { Classification, ProposedAction } from "../domain.ts";
 
 export type SenderEvidence = {
   senderDomain: string;
@@ -149,9 +149,14 @@ export function classifySender(evidence: SenderEvidence): ClassificationResult {
     reasons.push("Moderate send frequency");
   }
 
-  if (includesAny(text, promoTerms) || evidence.labelIds.includes("CATEGORY_PROMOTIONS")) {
+  if (includesAny(text, promoTerms)) {
     score += 15;
-    reasons.push("Promotional language or Gmail promo category");
+    reasons.push("Promotional language detected");
+  }
+
+  if (evidence.labelIds.includes("CATEGORY_PROMOTIONS")) {
+    score += 10;
+    reasons.push("Gmail promotional category");
   }
 
   if (/no-?reply|donotreply|do-not-reply|mailer/.test(text)) {

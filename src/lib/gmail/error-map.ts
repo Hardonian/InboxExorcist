@@ -1,4 +1,4 @@
-import { AppError } from "../errors";
+import { AppError } from "../errors.ts";
 
 export function mapGmailError(status: number, bodyText = "") {
   if (status === 401 || status === 403) {
