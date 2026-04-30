@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 const messages: Record<string, string> = {
   GOOGLE_OAUTH_NOT_CONFIGURED:
     "Google OAuth is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET.",
@@ -16,9 +18,9 @@ export default async function AuthErrorPage({
   const code = params.code || "AUTH_ERROR";
   return (
     <main className="mx-auto flex min-h-screen max-w-3xl flex-col justify-center px-5 py-10 sm:px-8">
-      <a href="/" className="text-sm font-semibold text-[#7b3f00]">
+      <Link href="/" className="text-sm font-semibold text-[#7b3f00]">
         InboxExorcist
-      </a>
+      </Link>
       <div className="mt-6 rounded-lg border border-[#d8d1bd] bg-white p-6">
         <p className="font-mono text-sm text-[#7b3f00]">{code}</p>
         <h1 className="mt-3 text-3xl font-semibold">Gmail connection paused.</h1>
@@ -26,12 +28,12 @@ export default async function AuthErrorPage({
           {messages[code] ||
             "Google OAuth did not complete. No inbox action was taken."}
         </p>
-        <a
+        <Link
           href="/api/auth/google/start"
           className="mt-5 inline-flex h-11 items-center rounded-md bg-[#17150f] px-4 font-semibold text-white"
         >
           Try connecting again
-        </a>
+        </Link>
       </div>
     </main>
   );

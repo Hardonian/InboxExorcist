@@ -12,7 +12,7 @@ export default function SecurityPage() {
         <section>
           <h2 className="text-2xl font-semibold mb-4 text-purple-600">No-Delete Invariant</h2>
           <p className="text-zinc-700 dark:text-zinc-300">
-            InboxExorcist is architected to be incapable of deleting your emails. We use filters to archive or label messages, but the "delete" permission is never requested from Google, and no code exists in our codebase to trigger a deletion.
+            InboxExorcist is architected to be incapable of deleting your emails. We use filters to archive or label messages, but the &quot;delete&quot; permission is never requested from Google, and no code exists in our codebase to trigger a deletion.
           </p>
         </section>
 
