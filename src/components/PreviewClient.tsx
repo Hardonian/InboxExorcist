@@ -8,7 +8,7 @@ import type {
   ScanRunWithCandidates,
   SenderCandidate,
 } from "@/lib/domain";
-
+import { trackQuietPreviewViewed, trackQuietActionStarted, trackQuietActionCompleted } from "@/lib/analytics/events";
 function bucketTitle(candidate: SenderCandidate) {
   if (candidate.protectedReason || candidate.proposedAction === "SKIP") {
     return "Skipped for safety";
@@ -50,6 +50,18 @@ export function PreviewClient({
     })();
   }, [initialScan, scanId]);
 
+  useEffect(() => {
+    if (scan) {
+      trackQuietPreviewViewed();
+    }
+  }, [scan]);
+
+  useEffect(() => {
+    if (scan) {
+      trackQuietPreviewViewed();
+    }
+  }, [scan]);
+
   const counts = useMemo(() => {
     const candidates = scan?.candidates || [];
     return {
@@ -71,6 +83,7 @@ export function PreviewClient({
     if (!scan) return;
     setWorking(true);
     setError(null);
+    trackQuietActionStarted();
     const response = await fetch("/api/gmail/actions/quiet", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -88,6 +101,16 @@ export function PreviewClient({
       return;
     }
     setSummary(payload.data);
+    trackQuietActionCompleted({
+      quietedSenders: payload.data.quietedSenders,
+      filtersCreated: payload.data.filtersCreated,
+      skippedForSafety: payload.data.skippedForSafety,
+    });
+    trackQuietActionCompleted({
+      quietedSenders: payload.data.quietedSenders,
+      filtersCreated: payload.data.filtersCreated,
+      skippedForSafety: payload.data.skippedForSafety,
+    });
   }
 
   if (error) {

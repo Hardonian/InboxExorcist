@@ -58,7 +58,7 @@ export type GmailConnection = {
   encryptedRefreshToken?: string;
   tokenExpiresAt: string;
   scopes: string[];
-  status: "connected" | "disconnected" | "insufficient_scopes";
+  status: "connected" | "disconnected" | "insufficient_scopes" | "scan_only";
   createdAt: string;
   updatedAt: string;
 };

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 
 import type { ApiEnvelope, SenderAction } from "@/lib/domain";
-
+import { trackUndoClicked } from "@/lib/analytics/events";
 export function ActionHistoryClient() {
   const [actions, setActions] = useState<SenderAction[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -21,6 +21,7 @@ export function ActionHistoryClient() {
 
   async function undoLatest() {
     setUndoing(true);
+    trackUndoClicked();
     const response = await fetch("/api/gmail/actions/undo", {
       method: "POST",
       headers: { "content-type": "application/json" },

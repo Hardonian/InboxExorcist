@@ -3,7 +3,7 @@ import type { GmailConnection } from "../domain.ts";
 import { AppError } from "../errors.ts";
 import { encryptSecret, decryptSecret } from "../security/crypto.ts";
 import { hashPii } from "../security/hash.ts";
-import { buildRequestedScopes, hasRequiredScopes } from "./scopes.ts";
+import { buildRequestedScopes, buildScanScopes, hasRequiredScopes, hasScanScopes } from "./scopes.ts";
 import { newId, nowIso } from "../ids.ts";
 
 type TokenResponse = {
@@ -32,11 +32,11 @@ export function assertGoogleConfigured() {
   return config;
 }
 
-export function buildGoogleOAuthUrl(state: string) {
+export function buildGoogleOAuthUrl(state: string, { incremental = false, includeSend = false } = {}) {
   const config = assertGoogleConfigured();
-  const scopes = buildRequestedScopes({
-    includeSend: process.env.GMAIL_ENABLE_MAILTO_UNSUBSCRIBE === "true",
-  });
+  const scopes = incremental
+    ? buildScanScopes()
+    : buildRequestedScopes({ includeSend });
   const params = new URLSearchParams({
     client_id: config.googleClientId || "",
     redirect_uri: config.googleRedirectUri,
@@ -161,7 +161,7 @@ export async function buildConnectionFromTokens({
       Date.now() + (tokens.expires_in || 3600) * 1000,
     ).toISOString(),
     scopes,
-    status: hasRequiredScopes(scopes) ? "connected" : "insufficient_scopes",
+    status: hasRequiredScopes(scopes) ? "connected" : hasScanScopes(scopes) ? "scan_only" : "insufficient_scopes",
     createdAt: now,
     updatedAt: now,
   };

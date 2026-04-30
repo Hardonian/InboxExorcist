@@ -41,6 +41,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    if (connection.status === "scan_only") {
+      return NextResponse.redirect(new URL("/scan?connected=1&incremental=1", appUrl));
+    }
+
     return NextResponse.redirect(new URL("/scan?connected=1", appUrl));
   } catch (callbackError) {
     const code =

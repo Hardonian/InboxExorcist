@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import type { ApiEnvelope, ScanRunWithCandidates } from "@/lib/domain";
+import { trackScanStarted, trackScanCompleted } from "@/lib/analytics/events";
 
 const stages = [
   "Connecting",
@@ -21,6 +22,7 @@ export function ScanClient({ autoStart }: { autoStart: boolean }) {
   async function startScan() {
     setState("scanning");
     setError(null);
+    trackScanStarted();
     const response = await fetch("/api/gmail/scan", {
       method: "POST",
       headers: { "content-type": "application/json" },
@@ -34,6 +36,16 @@ export function ScanClient({ autoStart }: { autoStart: boolean }) {
     }
     setScan(payload.data);
     setState("done");
+    trackScanCompleted({
+      candidateCount: payload.data.candidateCount,
+      selectedCount: payload.data.selectedCount,
+      messageCount: payload.data.messageCount,
+    });
+    trackScanCompleted({
+      candidateCount: payload.data.candidateCount,
+      selectedCount: payload.data.selectedCount,
+      messageCount: payload.data.messageCount,
+    });
   }
 
   useEffect(() => {

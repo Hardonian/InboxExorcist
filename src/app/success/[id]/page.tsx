@@ -1,4 +1,5 @@
 import { ActionHistoryClient } from "@/components/ActionHistoryClient";
+import ShareCard from "@/components/ShareCard";
 
 export default async function SuccessPage({
   params,
@@ -16,8 +17,13 @@ export default async function SuccessPage({
         I exorcised junk senders from Gmail. Filters and labels are reversible
         from the action log.
       </p>
-      <div className="mt-8">
-        <ActionHistoryClient />
+      <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div>
+          <ActionHistoryClient />
+        </div>
+        <div>
+          <ShareCard senderCount={0} />
+        </div>
       </div>
     </main>
   );
