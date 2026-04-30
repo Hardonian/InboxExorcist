@@ -11,7 +11,7 @@ export default function PrivacyPage() {
       <section className="space-y-6">
         <h2 className="text-2xl font-semibold">1. Our Commitment to Your Privacy</h2>
         <p>
-           InboxExorcist is built with a &apos;Privacy First&apos; architecture. We do not sell your data, we do not store your email bodies, and we never delete your emails.
+          InboxExorcist is built with a &apos;Privacy First&apos; architecture. We do not sell your data, we do not store your email bodies, and we never delete your emails.
         </p>
         
         <h2 className="text-2xl font-semibold">2. Data We Collect</h2>
