@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 import type { ApiEnvelope, ScanRunWithCandidates } from "@/lib/domain";
 
@@ -36,17 +37,25 @@ export function ScanClient({ autoStart }: { autoStart: boolean }) {
   }
 
   useEffect(() => {
+    let ignore = false;
     if (autoStart) {
-      void startScan();
+      void (async () => {
+        if (!ignore) {
+          await startScan();
+        }
+      })();
     }
+    return () => {
+      ignore = true;
+    };
   }, [autoStart]);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col px-5 py-10 sm:px-8">
       <div className="mb-8">
-        <a href="/" className="text-sm font-semibold text-[#7b3f00]">
+        <Link href="/" className="text-sm font-semibold text-[#7b3f00]">
           InboxExorcist
-        </a>
+        </Link>
         <h1 className="mt-5 text-4xl font-semibold">Purge promos, safely.</h1>
         <p className="mt-3 max-w-2xl leading-7 text-[#4d473b]">
           We scan recent Gmail headers only, group likely bulk senders, and build
@@ -89,12 +98,12 @@ export function ScanClient({ autoStart }: { autoStart: boolean }) {
           <div className="mt-6 rounded-md border border-[#b94a48]/30 bg-[#fff6f3] p-4 text-[#7d251f]">
             {error}
             <div className="mt-3">
-              <a
+              <Link
                 href="/api/auth/google/start"
                 className="font-semibold underline"
               >
                 Connect Gmail
-              </a>
+              </Link>
             </div>
           </div>
         )}
@@ -105,12 +114,12 @@ export function ScanClient({ autoStart }: { autoStart: boolean }) {
               Found {scan.selectedCount} high-confidence senders from{" "}
               {scan.messageCount} recent messages.
             </p>
-            <a
+            <Link
               href={`/preview/${scan.id}`}
               className="mt-4 inline-flex h-10 items-center rounded-md bg-[#d7ff7a] px-4 font-semibold text-[#17150f]"
             >
               Preview action plan
-            </a>
+            </Link>
           </div>
         )}
       </div>

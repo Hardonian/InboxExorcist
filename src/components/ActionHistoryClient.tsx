@@ -36,7 +36,15 @@ export function ActionHistoryClient() {
   }
 
   useEffect(() => {
-    void load();
+    let ignore = false;
+    void (async () => {
+      if (!ignore) {
+        await load();
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   return (
