@@ -9,12 +9,22 @@ import {
 } from './types';
 
 export class IntelligenceEngine {
+  private config: IntelligenceConfig;
+  private patterns: SenderPattern[];
+  private safetyRules: SafetyRule[];
+  private edgeCases: EdgeCase[];
+
   constructor(
-    private config: IntelligenceConfig,
-    private patterns: SenderPattern[],
-    private safetyRules: SafetyRule[],
-    private edgeCases: EdgeCase[]
-  ) {}
+    config: IntelligenceConfig,
+    patterns: SenderPattern[],
+    safetyRules: SafetyRule[],
+    edgeCases: EdgeCase[]
+  ) {
+    this.config = config;
+    this.patterns = patterns;
+    this.safetyRules = safetyRules;
+    this.edgeCases = edgeCases;
+  }
 
   public analyze(email: EmailMetadata): IntelligenceReport {
     let score = this.config.engine_settings.default_base_score;
