@@ -7,7 +7,7 @@ import type {
   SenderCandidate,
   UnsubscribeAttempt,
 } from "../domain.ts";
-import type { AppStore } from "./store";
+import type { AppStore } from "./store.ts";
 
 type Json = Record<string, unknown>;
 

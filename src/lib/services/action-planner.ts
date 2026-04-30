@@ -1,4 +1,4 @@
-import type { SenderCandidate } from "../domain";
+import type { SenderCandidate } from "../domain.ts";
 
 export function selectedQuietCandidates(
   candidates: SenderCandidate[],

@@ -1,8 +1,8 @@
-import type { AuditEvent, SenderAction } from "../domain";
-import { AppError } from "../errors";
-import type { GmailClient } from "../gmail/client";
-import { newId, nowIso } from "../ids";
-import type { AppStore } from "../storage/store";
+import type { AuditEvent, SenderAction } from "../domain.ts";
+import { AppError } from "../errors.ts";
+import type { GmailClient } from "../gmail/client.ts";
+import { newId, nowIso } from "../ids.ts";
+import type { AppStore } from "../storage/store.ts";
 
 export async function undoActions({
   userId,

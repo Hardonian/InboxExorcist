@@ -4,14 +4,14 @@ import type {
   QuietSummary,
   SenderAction,
   UnsubscribeAttempt,
-} from "../domain";
-import { AppError } from "../errors";
-import type { GmailClient } from "../gmail/client";
-import { gmailMailtoUnsubscribeScope } from "../gmail/scopes";
-import { newId, nowIso } from "../ids";
-import type { AppStore } from "../storage/store";
-import { attemptHttpsUnsubscribe } from "../unsubscribe/engine";
-import { selectedQuietCandidates, skippedCandidateCount } from "./action-planner";
+} from "../domain.ts";
+import { AppError } from "../errors.ts";
+import type { GmailClient } from "../gmail/client.ts";
+import { gmailMailtoUnsubscribeScope } from "../gmail/scopes.ts";
+import { newId, nowIso } from "../ids.ts";
+import type { AppStore } from "../storage/store.ts";
+import { attemptHttpsUnsubscribe } from "../unsubscribe/engine.ts";
+import { selectedQuietCandidates, skippedCandidateCount } from "./action-planner.ts";
 
 const quietLabelName = "InboxExorcist/Quieted";
 
