@@ -15,6 +15,105 @@ export type ApiSuccessEnvelope<T> = {
 
 export type ApiEnvelope<T> = ApiSuccessEnvelope<T> | ApiErrorEnvelope;
 
+export type ScanResult = {
+  schemaVersion: string;
+  ok: boolean;
+  resultId: string;
+  confidence: "high" | "medium" | "low";
+  confidenceExplanation: string;
+  reasons: string[];
+  signals: {
+    senderCount: number;
+    messageCount: number;
+    scanDuration: string;
+    degraded: boolean;
+  };
+  evidence: string[];
+  limitations: string[];
+  degraded: boolean;
+  diagnosticsId?: string;
+  noisySenders: string[];
+  reviewSenders: string[];
+  protectedSenders: string[];
+  proposedActions: Array<{
+    senderDomain: string;
+    action: "QUIET_BY_FILTER" | "UNSUBSCRIBE_THEN_FILTER" | "REVIEW" | "SKIP";
+    reason: string;
+  }>;
+  filtersCreated: number;
+  unsubscribeAttempts: number;
+  undoAvailable: boolean;
+};
+
+export type NoisySenderSummary = {
+  senderDomain: string;
+  senderDisplayName?: string;
+  messageCount: number;
+  classification: Classification;
+  score: number;
+  protectedReason?: string;
+  proposedAction: ProposedAction;
+  hasUnsubscribeLink: boolean;
+};
+
+export type QuietResult = {
+  schemaVersion: string;
+  ok: boolean;
+  resultId: string;
+  confidence: "high" | "medium" | "low";
+  confidenceExplanation: string;
+  reasons: string[];
+  signals: {
+    quietedCount: number;
+    filtersCreated: number;
+    unsubscribeAttempts: number;
+    skippedCount: number;
+  };
+  evidence: string[];
+  limitations: string[];
+  degraded: boolean;
+  diagnosticsId?: string;
+  noisySenders: string[];
+  reviewSenders: string[];
+  protectedSenders: string[];
+  proposedActions: Array<{
+    senderDomain: string;
+    action: "QUIETED" | "UNSUBSCRIBED" | "FAILED";
+    reason: string;
+  }>;
+  filtersCreated: number;
+  unsubscribeAttempts: number;
+  undoAvailable: boolean;
+};
+
+export type UndoResult = {
+  schemaVersion: string;
+  ok: boolean;
+  resultId: string;
+  confidence: "high" | "medium" | "low";
+  confidenceExplanation: string;
+  reasons: string[];
+  signals: {
+    removedFilters: number;
+    failedCount: number;
+  };
+  evidence: string[];
+  limitations: string[];
+  degraded: boolean;
+  diagnosticsId?: string;
+  noisySenders: string[];
+  reviewSenders: string[];
+  protectedSenders: string[];
+  proposedActions: Array<{
+    senderDomain: string;
+    action: "UNDO_COMPLETED" | "UNDO_PARTIAL";
+    reason: string;
+  }>;
+  filtersCreated: number;
+  unsubscribeAttempts: number;
+  undoAvailable: boolean;
+};
+
 export const classifications = [
   "PROMOTIONAL_HIGH_CONFIDENCE",
   "NEWSLETTER_HIGH_CONFIDENCE",
@@ -35,6 +134,12 @@ export const proposedActions = [
 ] as const;
 
 export type ProposedAction = (typeof proposedActions)[number];
+
+export type ProposedActionItem = {
+  senderDomain: string;
+  action: "QUIET_BY_FILTER" | "UNSUBSCRIBE_THEN_FILTER" | "REVIEW" | "SKIP";
+  reason: string;
+};
 
 export const actionResults = [
   "UNSUBSCRIBED",

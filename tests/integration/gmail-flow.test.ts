@@ -10,9 +10,17 @@ import {
   promoMessage,
   protectedMessage,
 } from "../helpers/mock-gmail.ts";
+import { resetAllCaches, resetIdempotency, resetCostMetrics } from "../../src/lib/diagnostics/index.ts";
+
+function resetAll() {
+  resetMemoryStoreForTests();
+  resetAllCaches();
+  resetIdempotency();
+  resetCostMetrics();
+}
 
 test("scan creates candidates and skips protected senders", async () => {
-  resetMemoryStoreForTests();
+  resetAll();
   const store = new MemoryStore();
   const gmail = new MockGmailClient([
     ...Array.from({ length: 12 }, (_, index) => promoMessage(`promo-${index}`)),
@@ -27,7 +35,7 @@ test("scan creates candidates and skips protected senders", async () => {
 });
 
 test("quiet action creates label and filter, then undo removes the filter", async () => {
-  resetMemoryStoreForTests();
+  resetAll();
   const store = new MemoryStore();
   const gmail = new MockGmailClient(
     Array.from({ length: 12 }, (_, index) => promoMessage(`promo-${index}`)),
@@ -53,7 +61,7 @@ test("quiet action creates label and filter, then undo removes the filter", asyn
 });
 
 test("partial Gmail filter failure returns degraded warning summary", async () => {
-  resetMemoryStoreForTests();
+  resetAll();
   const store = new MemoryStore();
   const gmail = new MockGmailClient(
     Array.from({ length: 12 }, (_, index) => promoMessage(`promo-${index}`)),

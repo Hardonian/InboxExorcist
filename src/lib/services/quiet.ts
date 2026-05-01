@@ -12,6 +12,14 @@ import { newId, nowIso } from "../ids.ts";
 import type { AppStore } from "../storage/store.ts";
 import { attemptHttpsUnsubscribe } from "../unsubscribe/engine.ts";
 import { selectedQuietCandidates, skippedCandidateCount } from "./action-planner.ts";
+import {
+  safeLogInfo,
+  recordDiagnosticEvent,
+  countGmailApiCall,
+  countAction,
+  getCircuitBreaker,
+  withIdempotency,
+} from "../diagnostics/index.ts";
 
 const quietLabelName = "InboxExorcist/Quieted";
 
@@ -34,6 +42,42 @@ export async function quietSenders({
   allowHttpsUnsubscribe?: boolean;
   allowMailtoUnsubscribe?: boolean;
 }): Promise<QuietSummary> {
+  return withIdempotency(
+    `quiet:${userId}:${scanRunId}:${(candidateIds || []).sort().join(",")}`,
+    () => executeQuietSenders({
+      userId,
+      scanRunId,
+      candidateIds,
+      gmail,
+      store,
+      grantedScopes,
+      allowHttpsUnsubscribe,
+      allowMailtoUnsubscribe,
+    }),
+  );
+}
+
+async function executeQuietSenders({
+  userId,
+  scanRunId,
+  candidateIds,
+  gmail,
+  store,
+  grantedScopes,
+  allowHttpsUnsubscribe = true,
+  allowMailtoUnsubscribe = false,
+}: {
+  userId: string;
+  scanRunId: string;
+  candidateIds?: string[];
+  gmail: GmailClient;
+  store: AppStore;
+  grantedScopes: string[];
+  allowHttpsUnsubscribe?: boolean;
+  allowMailtoUnsubscribe?: boolean;
+}): Promise<QuietSummary> {
+  recordDiagnosticEvent(userId, "quiet_action_started", { scanRunId, candidateIds });
+
   const scan = await store.getScanRun(scanRunId, userId);
   if (!scan) {
     throw new AppError({
@@ -56,6 +100,11 @@ export async function quietSenders({
   let unsubscribeAttemptsSent = 0;
 
   if (selected.length === 0) {
+    recordDiagnosticEvent(userId, "quiet_action_completed", {
+      scanRunId,
+      selectedCount: 0,
+      skippedForSafety,
+    }, true);
     throw new AppError({
       code: "NO_SAFE_SENDERS_SELECTED",
       message: "No high-confidence safe senders were selected.",
@@ -64,7 +113,36 @@ export async function quietSenders({
     });
   }
 
-  const quietLabel = await gmail.ensureLabel(quietLabelName);
+  const breaker = getCircuitBreaker("gmail-api");
+
+  let labelId: string;
+  try {
+    const quietLabel = await breaker.execute(async () => {
+      countGmailApiCall();
+      return gmail.ensureLabel(quietLabelName);
+    });
+    labelId = quietLabel.id;
+  } catch (error) {
+    const code = error instanceof AppError ? error.code : "LABEL_CREATE_FAILED";
+    recordDiagnosticEvent(userId, "quiet_action_partial", {
+      scanRunId,
+      error: code,
+    }, true, { code: String(code), message: String(error) });
+    warnings.push({
+      ok: false,
+      code: String(code),
+      message: "Could not create the quiet label. Quiet action may still work.",
+      retryable: true,
+      degraded: true,
+    });
+    throw new AppError({
+      code: "LABEL_CREATE_FAILED",
+      message: "Could not create the quiet label.",
+      retryable: true,
+      degraded: true,
+      status: 502,
+    });
+  }
 
   for (const candidate of selected) {
     const createdAt = nowIso();
@@ -129,27 +207,39 @@ export async function quietSenders({
     }
 
     try {
-      const filter = await gmail.createQuietFilter({
-        senderDomain: candidate.senderDomain,
-        labelId: quietLabel.id,
+      const filter = await breaker.execute(async () => {
+        countGmailApiCall();
+        return gmail.createQuietFilter({
+          senderDomain: candidate.senderDomain,
+          labelId,
+        });
       });
-      const messageIds = await gmail.listMessageIdsForSender({
-        senderDomain: candidate.senderDomain,
-        maxMessages: 500,
+
+      const messageIds = await breaker.execute(async () => {
+        countGmailApiCall();
+        return gmail.listMessageIdsForSender({
+          senderDomain: candidate.senderDomain,
+          maxMessages: 500,
+        });
       });
-      const modified = await gmail.batchModifyMessages({
-        messageIds,
-        addLabelIds: [quietLabel.id],
-        removeLabelIds: ["INBOX"],
+
+      const modified = await breaker.execute(async () => {
+        countGmailApiCall();
+        return gmail.batchModifyMessages({
+          messageIds,
+          addLabelIds: [labelId],
+          removeLabelIds: ["INBOX"],
+        });
       });
       messagesArchivedOrLabeled += modified.modifiedCount;
+      countAction();
       filters.push({
         id: newId("filter"),
         userId,
         actionId: action.id,
         senderDomain: candidate.senderDomain,
         gmailFilterId: filter.id,
-        gmailLabelId: quietLabel.id,
+        gmailLabelId: labelId,
         labelName: quietLabelName,
         createdAt,
       });
@@ -201,6 +291,31 @@ export async function quietSenders({
     filters,
     unsubscribeAttempts: attempts,
     auditEvents: audits,
+  });
+
+  const hasPartial = failedFilters > 0;
+  recordDiagnosticEvent(
+    userId,
+    hasPartial ? "quiet_action_partial" : "quiet_action_completed",
+    {
+      scanRunId,
+      quietedCount: actions.filter(
+        (a) => a.result === "QUIETED_BY_FILTER" || a.result === "UNSUBSCRIBED",
+      ).length,
+      failedFilters,
+      skippedForSafety,
+    },
+    hasPartial,
+    hasPartial ? { code: "quiet_action_partial", message: `${failedFilters} filter(s) failed` } : undefined,
+  );
+
+  safeLogInfo("Quiet action completed", {
+    userId,
+    scanRunId,
+    quietedCount: actions.filter(
+      (a) => a.result === "QUIETED_BY_FILTER" || a.result === "UNSUBSCRIBED",
+    ).length,
+    failedFilters,
   });
 
   return {
