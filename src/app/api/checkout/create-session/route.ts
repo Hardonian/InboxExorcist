@@ -83,10 +83,10 @@ export async function POST(request: NextRequest) {
         `line_items[${index}][price_data][product_data][description]`,
         item.price_data.product_data.description,
       );
-      if ("recurring" in item.price_data) {
+      if ("recurring" in item.price_data && typeof item.price_data.recurring === "object" && item.price_data.recurring && "interval" in item.price_data.recurring) {
         formParams.append(
           `line_items[${index}][price_data][recurring][interval]`,
-          item.price_data.recurring.interval,
+          String((item.price_data.recurring as { interval: string }).interval),
         );
       }
     });
@@ -101,7 +101,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const err = await response.text();
       return jsonOk(
         {
           simulated: true,

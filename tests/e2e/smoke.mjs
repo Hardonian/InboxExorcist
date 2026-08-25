@@ -21,14 +21,18 @@ async function waitForServer() {
   throw new Error("Next dev server did not become ready");
 }
 
+const isWindows = process.platform === "win32";
+const npmCmd = isWindows ? "npm.cmd" : "npm";
+
 const child = spawn(
-  "npm",
+  npmCmd,
   ["run", "dev", "--", "--port", String(port)],
   {
     stdio: ["ignore", "pipe", "pipe"],
-    shell: true,
+    shell: isWindows,
     env: {
       ...process.env,
+      PORT: String(port),
       NEXT_TELEMETRY_DISABLED: "1",
       INBOXEXORCIST_E2E: "1",
     },
@@ -71,5 +75,15 @@ try {
   console.error(output);
   throw error;
 } finally {
-  child.kill("SIGTERM");
+  if (child.pid) {
+    if (isWindows) {
+      try {
+        spawn("taskkill", ["/pid", String(child.pid), "/T", "/F"]);
+      } catch {
+        child.kill("SIGKILL");
+      }
+    } else {
+      child.kill("SIGTERM");
+    }
+  }
 }

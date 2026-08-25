@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { ActionHistoryClient } from "@/components/ActionHistoryClient";
 import type { ApiEnvelope } from "@/lib/domain";
 
@@ -20,33 +19,28 @@ export function SettingsClient() {
 
   const [diagnostics, setDiagnostics] = useState<Record<string, unknown> | null>(null);
 
-  async function loadAllowlist() {
-    try {
-      const res = await fetch("/api/me/allowlist");
-      const payload = (await res.json()) as ApiEnvelope<{ allowlist: string[] }>;
-      if (payload.ok) {
-        setAllowlist(payload.data.allowlist);
-      }
-    } catch {
-      // fallback
-    }
-  }
-
-  async function loadDiagnostics() {
-    try {
-      const res = await fetch("/api/diagnostics/metrics");
-      const payload = (await res.json()) as ApiEnvelope<Record<string, unknown>>;
-      if (payload.ok) {
-        setDiagnostics(payload.data);
-      }
-    } catch {
-      // fallback
-    }
-  }
-
   useEffect(() => {
-    void loadAllowlist();
-    void loadDiagnostics();
+    let ignore = false;
+    async function init() {
+      try {
+        const [allowRes, diagRes] = await Promise.all([
+          fetch("/api/me/allowlist"),
+          fetch("/api/diagnostics/metrics"),
+        ]);
+        const allowPayload = (await allowRes.json()) as ApiEnvelope<{ allowlist: string[] }>;
+        const diagPayload = (await diagRes.json()) as ApiEnvelope<Record<string, unknown>>;
+        if (!ignore) {
+          if (allowPayload.ok) setAllowlist(allowPayload.data.allowlist);
+          if (diagPayload.ok) setDiagnostics(diagPayload.data);
+        }
+      } catch {
+        // fallback
+      }
+    }
+    void init();
+    return () => {
+      ignore = true;
+    };
   }, []);
 
   async function addDomainToAllowlist(e: React.FormEvent) {
