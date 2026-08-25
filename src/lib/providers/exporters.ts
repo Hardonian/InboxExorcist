@@ -85,7 +85,6 @@ if address :domain :is "from" [${domainList}] {
  */
 export function exportAppleMailScript(
   candidates: SenderCandidate[],
-  mailboxName = "Quieted Promo",
 ): ProviderExporterResult {
   const domains = candidates
     .filter((c) => c.selectedByDefault && c.proposedAction !== "SKIP")
