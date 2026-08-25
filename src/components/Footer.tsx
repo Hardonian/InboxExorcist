@@ -37,6 +37,11 @@ export function Footer() {
                 </Link>
               </li>
               <li>
+                <Link href="/providers" className="hover:text-white transition">
+                  Supported Providers
+                </Link>
+              </li>
+              <li>
                 <Link href="/settings" className="hover:text-white transition">
                   Settings & Allowlist
                 </Link>

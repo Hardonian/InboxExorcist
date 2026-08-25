@@ -9,6 +9,7 @@ export function Navbar() {
 
   const navLinks = [
     { href: "/demo", label: "Interactive Demo" },
+    { href: "/providers", label: "Supported Providers" },
     { href: "/scan", label: "Scan Inbox" },
     { href: "/settings", label: "Settings & Allowlist" },
     { href: "/security", label: "Security" },

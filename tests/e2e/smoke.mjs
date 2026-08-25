@@ -76,6 +76,10 @@ try {
   assert.equal(widget.status, 200);
   assert.match(await widget.text(), /Gmail Noise Radar/);
 
+  const providers = await fetch(`${baseUrl}/providers`);
+  assert.equal(providers.status, 200);
+  assert.match(await providers.text(), /Works with/);
+
   const embedScript = await fetch(`${baseUrl}/api/widget/embed.js`);
   assert.equal(embedScript.status, 200);
   assert.equal(embedScript.headers.get("content-type"), "application/javascript; charset=utf-8");
