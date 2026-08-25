@@ -34,8 +34,8 @@ body {
 
 .glass-card {
   background: var(--card-bg);
-  backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
   border: 1px solid var(--card-border);
 }
 
@@ -64,12 +64,14 @@ body {
 .gradient-text-flame {
   background: linear-gradient(135deg, #fff 20%, #fcd34d 60%, #f59e0b 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
 .gradient-text-emerald {
   background: linear-gradient(135deg, #a7f3d0 0%, #34d399 50%, #059669 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
