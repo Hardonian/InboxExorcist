@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { ritualAudio } from "@/lib/audio/ritual-audio";
 import type { ApiEnvelope, ScanRunWithCandidates } from "@/lib/domain";
 
 const stages = [
@@ -22,9 +23,14 @@ export function ScanClient({ autoStart }: { autoStart: boolean }) {
     setState("scanning");
     setError(null);
     setActiveStage(0);
+    ritualAudio.playCandleIgnite();
 
     const stageInterval = setInterval(() => {
-      setActiveStage((prev) => (prev < 4 ? prev + 1 : prev));
+      setActiveStage((prev) => {
+        const next = prev < 4 ? prev + 1 : prev;
+        ritualAudio.playScanningPulse();
+        return next;
+      });
     }, 1200);
 
     try {
@@ -44,6 +50,7 @@ export function ScanClient({ autoStart }: { autoStart: boolean }) {
       setActiveStage(4);
       setScan(payload.data);
       setState("done");
+      ritualAudio.playBellOfLiberation();
     } catch (err) {
       clearInterval(stageInterval);
       setState("error");

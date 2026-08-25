@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { classifyDemonArchetype } from "@/lib/intelligence/archetypes";
+import { ritualAudio } from "@/lib/audio/ritual-audio";
+import { KeyboardShortcutsModal } from "@/components/KeyboardShortcutsModal";
 import type {
   ApiEnvelope,
   QuietSummary,
@@ -27,6 +30,8 @@ export function PreviewClient({
   const [sortBy, setSortBy] = useState<"score" | "messages" | "domain">("score");
   const [inspectCandidate, setInspectCandidate] = useState<SenderCandidate | null>(null);
   const [allowlistedDomains, setAllowlistedDomains] = useState<Set<string>>(new Set());
+  const [focusedIndex, setFocusedIndex] = useState<number>(0);
+  const [showShortcuts, setShowShortcuts] = useState<boolean>(false);
 
   const [error, setError] = useState<string | null>(null);
   const [summary, setSummary] = useState<QuietSummary | null>(null);
@@ -67,25 +72,28 @@ export function PreviewClient({
     })();
   }, []);
 
-  async function toggleAllowlist(domain: string) {
-    const isAllow = allowlistedDomains.has(domain);
-    const method = isAllow ? "DELETE" : "POST";
+  const toggleAllowlist = useCallback(
+    async (domain: string) => {
+      const isAllow = allowlistedDomains.has(domain);
+      const method = isAllow ? "DELETE" : "POST";
 
-    const next = new Set(allowlistedDomains);
-    if (isAllow) next.delete(domain);
-    else next.add(domain);
-    setAllowlistedDomains(next);
+      const next = new Set(allowlistedDomains);
+      if (isAllow) next.delete(domain);
+      else next.add(domain);
+      setAllowlistedDomains(next);
 
-    try {
-      await fetch("/api/me/allowlist", {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ domain }),
-      });
-    } catch {
-      // fallback
-    }
-  }
+      try {
+        await fetch("/api/me/allowlist", {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ domain }),
+        });
+      } catch {
+        // fallback
+      }
+    },
+    [allowlistedDomains],
+  );
 
   const counts = useMemo(() => {
     const candidates = scan?.candidates || [];
@@ -137,6 +145,49 @@ export function PreviewClient({
     });
   }, [scan, activeTab, searchQuery, sortBy]);
 
+  // Keyboard navigation & hotkeys
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input
+      if (["INPUT", "TEXTAREA", "SELECT"].includes((e.target as HTMLElement)?.tagName)) {
+        return;
+      }
+
+      if (e.key === "j" || e.key === "ArrowDown") {
+        e.preventDefault();
+        setFocusedIndex((prev) => Math.min(filteredCandidates.length - 1, prev + 1));
+      } else if (e.key === "k" || e.key === "ArrowUp") {
+        e.preventDefault();
+        setFocusedIndex((prev) => Math.max(0, prev - 1));
+      } else if (e.key === " " && filteredCandidates[focusedIndex]) {
+        e.preventDefault();
+        const cand = filteredCandidates[focusedIndex];
+        if (!cand.protectedReason) {
+          const next = new Set(selected);
+          if (next.has(cand.id)) next.delete(cand.id);
+          else next.add(cand.id);
+          setSelected(next);
+        }
+      } else if (e.key.toLowerCase() === "w" && filteredCandidates[focusedIndex]) {
+        e.preventDefault();
+        const cand = filteredCandidates[focusedIndex];
+        void toggleAllowlist(cand.senderDomain);
+      } else if ((e.key.toLowerCase() === "i" || e.key === "Enter") && filteredCandidates[focusedIndex]) {
+        e.preventDefault();
+        setInspectCandidate(filteredCandidates[focusedIndex]);
+      } else if (e.key === "?") {
+        e.preventDefault();
+        setShowShortcuts((prev) => !prev);
+      } else if (e.key.toLowerCase() === "m") {
+        e.preventDefault();
+        ritualAudio.toggleMute();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [filteredCandidates, focusedIndex, selected, toggleAllowlist]);
+
   const selectedStats = useMemo(() => {
     if (!scan) return { count: 0, messages: 0 };
     const chosen = scan.candidates.filter((c) => selected.has(c.id));
@@ -148,6 +199,8 @@ export function PreviewClient({
 
   async function quietSelected() {
     if (!scan) return;
+    ritualAudio.playDemonBanish();
+
     if (scan.id === "mock") {
       // Demo simulated success
       setSummary({
@@ -159,6 +212,7 @@ export function PreviewClient({
         failedFilters: 0,
         warnings: [],
       });
+      ritualAudio.playBellOfLiberation();
       return;
     }
 
@@ -182,6 +236,7 @@ export function PreviewClient({
         return;
       }
       setSummary(payload.data);
+      ritualAudio.playBellOfLiberation();
     } catch (err) {
       setWorking(false);
       setError(err instanceof Error ? err.message : "Failed to quiet senders.");
@@ -228,6 +283,8 @@ export function PreviewClient({
 
   return (
     <main className="mx-auto min-h-screen max-w-7xl px-5 py-10 pb-32 sm:px-8">
+      <KeyboardShortcutsModal isOpen={showShortcuts} onClose={() => setShowShortcuts(false)} />
+
       {/* Header */}
       <div className="flex flex-col gap-4 border-b border-white/10 pb-8 sm:flex-row sm:items-end sm:justify-between">
         <div>
@@ -242,11 +299,21 @@ export function PreviewClient({
           </p>
         </div>
 
-        {scan.id === "mock" && (
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-300">
-            🎭 Interactive Simulation Mode
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setShowShortcuts(true)}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-white/15 bg-white/5 px-3 text-xs font-semibold text-zinc-300 hover:bg-white/10 hover:text-white"
+          >
+            <span>⌨️</span> Hotkeys <kbd className="font-mono text-[10px] text-amber-400">?</kbd>
+          </button>
+
+          {scan.id === "mock" && (
+            <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-2 text-xs font-semibold text-amber-300">
+              🎭 Simulation Mode
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Metric Cards */}
@@ -374,17 +441,20 @@ export function PreviewClient({
             No senders found in this category or search filter.
           </div>
         ) : (
-          filteredCandidates.map((candidate) => {
+          filteredCandidates.map((candidate, idx) => {
             const isSelected = selected.has(candidate.id);
             const isAllow = allowlistedDomains.has(candidate.senderDomain);
             const isProtected = Boolean(candidate.protectedReason);
+            const isFocused = idx === focusedIndex;
+            const archetype = classifyDemonArchetype(candidate);
 
             return (
               <div
                 key={candidate.id}
-                className={`grid gap-4 p-4 transition sm:grid-cols-[40px_1fr_130px_130px_100px] sm:items-center ${
-                  isSelected ? "bg-amber-500/5" : "hover:bg-white/[0.02]"
-                }`}
+                onClick={() => setFocusedIndex(idx)}
+                className={`grid gap-4 p-4 transition sm:grid-cols-[40px_1fr_160px_130px_100px] sm:items-center cursor-pointer ${
+                  isFocused ? "ring-1 ring-amber-500/50 bg-white/[0.03]" : ""
+                } ${isSelected ? "bg-amber-500/5" : "hover:bg-white/[0.02]"}`}
               >
                 <div className="flex items-center justify-center">
                   <input
@@ -402,15 +472,20 @@ export function PreviewClient({
                 </div>
 
                 <div className="min-w-0">
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <span className="font-semibold text-white truncate">
                       {candidate.senderDisplayName || candidate.senderDomain}
                     </span>
-                    {isProtected && (
-                      <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300">
-                        PROTECTED SKIP
-                      </span>
-                    )}
+
+                    {/* Demon Archetype Badge */}
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold ${archetype.badgeClass}`}
+                      title={archetype.description}
+                    >
+                      <span>{archetype.emoji}</span>
+                      <span>{archetype.name}</span>
+                    </span>
+
                     {isAllow && (
                       <span className="rounded-full bg-cyan-500/20 px-2 py-0.5 text-[10px] font-bold text-cyan-300">
                         WHITELISTED
@@ -431,7 +506,10 @@ export function PreviewClient({
                 <div>
                   <button
                     type="button"
-                    onClick={() => toggleAllowlist(candidate.senderDomain)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      void toggleAllowlist(candidate.senderDomain);
+                    }}
                     className={`rounded-lg border px-2.5 py-1 text-xs font-semibold transition ${
                       isAllow
                         ? "border-cyan-500/40 bg-cyan-500/10 text-cyan-300"
@@ -456,7 +534,10 @@ export function PreviewClient({
                   </span>
                   <button
                     type="button"
-                    onClick={() => setInspectCandidate(candidate)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setInspectCandidate(candidate);
+                    }}
                     className="text-xs text-zinc-400 hover:text-white underline"
                   >
                     Inspect
@@ -504,12 +585,14 @@ export function PreviewClient({
       {/* Candidate Inspector Drawer / Modal */}
       {inspectCandidate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-5 backdrop-blur-sm">
-          <div className="glass-card w-full max-w-xl rounded-3xl p-6 shadow-2xl">
+          <div className="glass-card w-full max-w-xl rounded-3xl p-6 shadow-2xl border-amber-500/20">
             <div className="flex items-center justify-between border-b border-white/10 pb-4">
               <div>
-                <h3 className="text-xl font-bold text-white">
-                  {inspectCandidate.senderDisplayName || inspectCandidate.senderDomain}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-xl font-bold text-white">
+                    {inspectCandidate.senderDisplayName || inspectCandidate.senderDomain}
+                  </h3>
+                </div>
                 <p className="font-mono text-xs text-zinc-400">{inspectCandidate.senderDomain}</p>
               </div>
               <button
@@ -522,6 +605,26 @@ export function PreviewClient({
             </div>
 
             <div className="mt-6 space-y-4 text-sm text-zinc-300">
+              {/* Demon Threat Profile */}
+              {(() => {
+                const arch = classifyDemonArchetype(inspectCandidate);
+                return (
+                  <div className="rounded-2xl border border-white/10 bg-zinc-900/90 p-4">
+                    <div className="flex items-center gap-2">
+                      <span className="text-2xl">{arch.emoji}</span>
+                      <div>
+                        <div className="font-bold text-white text-base">{arch.name}</div>
+                        <div className="text-xs text-amber-400">{arch.tagline}</div>
+                      </div>
+                    </div>
+                    <p className="mt-3 text-xs leading-relaxed text-zinc-300">{arch.description}</p>
+                    <div className="mt-3 text-xs text-zinc-400">
+                      🛡️ <strong>Countermeasure:</strong> {arch.countermeasure}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-xl bg-zinc-900/80 p-3">
                   <div className="text-xs text-zinc-500">Noise Score</div>
@@ -577,7 +680,7 @@ export function PreviewClient({
                 onClick={() => setInspectCandidate(null)}
                 className="h-10 rounded-xl border border-white/20 bg-white/5 px-5 text-sm font-semibold text-white hover:bg-white/10"
               >
-                Close
+                Close (Esc)
               </button>
             </div>
           </div>

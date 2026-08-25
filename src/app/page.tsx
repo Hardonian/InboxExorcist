@@ -155,6 +155,100 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Demon Archetypes Threat Showcase */}
+      <section className="py-20 border-b border-white/10 bg-[#06070a]">
+        <div className="mx-auto max-w-7xl px-5 sm:px-8">
+          <div className="text-center max-w-2xl mx-auto">
+            <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">
+              Threat Intelligence
+            </span>
+            <h2 className="mt-2 text-3xl font-bold text-white sm:text-4xl">
+              Meet the Demons Haunting Your Inbox
+            </h2>
+            <p className="mt-3 text-zinc-400">
+              InboxExorcist automatically classifies noisy senders into distinct behavioral archetypes with targeted countermeasures.
+            </p>
+          </div>
+
+          <div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              {
+                emoji: "🧛",
+                name: "The Inbox Vampire",
+                tagline: "Relentless daily bloodsucker",
+                desc: "Sends 5+ promotional emails every week. Drains your phone battery and focus with flash sale discounts and product pushes.",
+                badge: "CRITICAL THREAT",
+                badgeClass: "bg-red-500/20 text-red-300 border-red-500/30",
+                spell: "Automated archive & notification silencing",
+              },
+              {
+                emoji: "🧙",
+                name: "The Shape-Shifter",
+                tagline: "Disguised promotional mimic",
+                desc: "Uses sneaky subject lines like 'Fwd: Your invoice' or 'Re: quick question' to trick you into opening sales pitches.",
+                badge: "HIGH THREAT",
+                badgeClass: "bg-purple-500/20 text-purple-300 border-purple-500/30",
+                spell: "Header provenance & SPF/DKIM verification",
+              },
+              {
+                emoji: "🧟",
+                name: "The Zombie Sub",
+                tagline: "Relic from past accounts",
+                desc: "Dormant marketing lists from services you signed up for in 2019 that suddenly re-animate during holiday campaigns.",
+                badge: "MODERATE THREAT",
+                badgeClass: "bg-amber-500/20 text-amber-300 border-amber-500/30",
+                spell: "RFC-8058 one-click unsubscribe ritual",
+              },
+              {
+                emoji: "👻",
+                name: "The Phantasm",
+                tagline: "Ghost blast opportunist",
+                desc: "Senders that email once every 3 months just often enough to avoid unsubscribes while staying under standard spam thresholds.",
+                badge: "MODERATE THREAT",
+                badgeClass: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+                spell: "Continuous background shield monitor",
+              },
+              {
+                emoji: "🛡️",
+                name: "Guardian Angel",
+                tagline: "Protected vital sender",
+                desc: "Banks (Chase, Citi), 2FA security codes, flight boarding passes, IRS/taxes, and doctor receipts. 100% immune from quieting.",
+                badge: "IMMUNE (SAFE SKIP)",
+                badgeClass: "bg-emerald-500/20 text-emerald-300 border-emerald-500/30",
+                spell: "Immutable Safe-Skip protection",
+              },
+              {
+                emoji: "⚖️",
+                name: "The Reversible Seal",
+                tagline: "Total peace of mind",
+                desc: "Every single filter created by InboxExorcist can be reversed with a single click from your action history log.",
+                badge: "ZERO RISK GUARANTEE",
+                badgeClass: "bg-white/10 text-white border-white/20",
+                spell: "1-Click complete state restoration",
+              },
+            ].map((arch) => (
+              <div key={arch.name} className="glass-card glass-card-hover rounded-2xl p-6 relative flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-3xl">{arch.emoji}</span>
+                    <span className={`rounded-full border px-2.5 py-0.5 text-[10px] font-bold ${arch.badgeClass}`}>
+                      {arch.badge}
+                    </span>
+                  </div>
+                  <h3 className="mt-4 text-lg font-bold text-white">{arch.name}</h3>
+                  <p className="text-xs text-amber-400/90 font-medium">{arch.tagline}</p>
+                  <p className="mt-3 text-xs leading-relaxed text-zinc-300">{arch.desc}</p>
+                </div>
+
+                <div className="mt-6 border-t border-white/10 pt-3 text-[11px] text-zinc-400">
+                  🪄 <span className="font-semibold text-zinc-200">Countermeasure:</span> {arch.spell}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Safety Protection Matrix */}
       <section className="py-20 border-b border-white/10">
         <div className="mx-auto max-w-7xl px-5 sm:px-8">

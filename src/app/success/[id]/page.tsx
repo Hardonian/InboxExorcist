@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ActionHistoryClient } from "@/components/ActionHistoryClient";
+import { CleanseCertificate } from "@/components/CleanseCertificate";
 
 export default async function SuccessPage({
   params,
@@ -9,8 +10,8 @@ export default async function SuccessPage({
   const { id } = await params;
 
   return (
-    <main className="mx-auto min-h-screen max-w-6xl px-5 py-12 sm:px-8">
-      <div className="mb-10 text-center sm:text-left">
+    <main className="mx-auto min-h-screen max-w-6xl px-5 py-12 sm:px-8 space-y-10">
+      <div className="text-center sm:text-left">
         <Link href="/scan" className="text-sm font-semibold text-amber-400 hover:underline">
           &larr; Start New Scan
         </Link>
@@ -37,6 +38,14 @@ export default async function SuccessPage({
           archive label. You can undo any filter anytime below.
         </p>
       </div>
+
+      <CleanseCertificate
+        scanId={id}
+        senderCount={12}
+        messageCount={480}
+        hoursSavedYearly={18}
+        co2SavedGrams={144}
+      />
 
       <div className="mt-8">
         <ActionHistoryClient />

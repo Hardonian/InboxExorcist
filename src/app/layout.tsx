@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { FlameCanvas } from "@/components/FlameCanvas";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,9 +31,10 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-[#090a0f] text-[#f3f4f6]">
+      <body className="min-h-full flex flex-col bg-[#090a0f] text-[#f3f4f6] relative">
+        <FlameCanvas />
         <Navbar />
-        <div className="flex-1">{children}</div>
+        <div className="relative z-10 flex-1">{children}</div>
         <Footer />
       </body>
     </html>

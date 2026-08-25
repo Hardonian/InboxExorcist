@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { AudioToggle } from "@/components/AudioToggle";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -47,16 +48,18 @@ export function Navbar() {
           })}
         </nav>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
+          <AudioToggle />
+
           <Link
             href="/demo"
-            className="hidden rounded-md border border-white/15 bg-white/5 px-3.5 py-1.5 text-sm font-medium text-zinc-200 transition hover:bg-white/10 hover:text-white sm:inline-block"
+            className="hidden rounded-xl border border-white/15 bg-white/5 px-3.5 py-2 text-xs font-semibold text-zinc-200 transition hover:bg-white/10 hover:text-white sm:inline-block"
           >
             Try Demo
           </Link>
           <a
             href="/api/auth/google/start"
-            className="inline-flex items-center justify-center rounded-md bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-1.5 text-sm font-semibold text-zinc-950 shadow-sm shadow-amber-500/25 transition hover:from-amber-400 hover:to-amber-500"
+            className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-2 text-xs font-bold text-zinc-950 shadow-sm shadow-amber-500/25 transition hover:from-amber-400 hover:to-amber-500"
           >
             Connect Gmail
           </a>
