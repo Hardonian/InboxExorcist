@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ActionHistoryClient } from "@/components/ActionHistoryClient";
 import type { ApiEnvelope } from "@/lib/domain";
 
-type Tab = "connection" | "allowlist" | "actions" | "data" | "diagnostics";
+type Tab = "connection" | "allowlist" | "actions" | "data" | "diagnostics" | "embed";
 
 export function SettingsClient() {
   const [activeTab, setActiveTab] = useState<Tab>("connection");
@@ -16,6 +16,7 @@ export function SettingsClient() {
   const [deleteModal, setDeleteModal] = useState(false);
   const [working, setWorking] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [copiedSnippet, setCopiedSnippet] = useState<string | null>(null);
 
   const [diagnostics, setDiagnostics] = useState<Record<string, unknown> | null>(null);
 
@@ -104,6 +105,23 @@ export function SettingsClient() {
     }
   }
 
+  function copyCode(text: string, id: string) {
+    navigator.clipboard.writeText(text);
+    setCopiedSnippet(id);
+    setTimeout(() => setCopiedSnippet(null), 2500);
+  }
+
+  const iframeSnippet = `<iframe
+  src="https://inboxexorcist.com/widget"
+  width="100%"
+  height="380"
+  frameborder="0"
+  style="border-radius: 16px; max-width: 420px; overflow: hidden;"
+  title="InboxExorcist Partner Widget">
+</iframe>`;
+
+  const scriptSnippet = `<script src="https://inboxexorcist.com/api/widget/embed.js" async></script>`;
+
   return (
     <div className="space-y-8">
       {statusMessage && (
@@ -119,6 +137,7 @@ export function SettingsClient() {
           { id: "connection" as const, label: "Gmail Connection" },
           { id: "allowlist" as const, label: `Trusted Allowlist (${allowlist.length})` },
           { id: "actions" as const, label: "Action History" },
+          { id: "embed" as const, label: "Partner & Embed SDK" },
           { id: "data" as const, label: "Data & Privacy" },
           { id: "diagnostics" as const, label: "System Health" },
         ].map((tab) => (
@@ -244,7 +263,65 @@ export function SettingsClient() {
       {/* Tab 3: Action History */}
       {activeTab === "actions" && <ActionHistoryClient />}
 
-      {/* Tab 4: Data & Privacy */}
+      {/* Tab 4: Partner & Embed SDK */}
+      {activeTab === "embed" && (
+        <div className="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
+          <div>
+            <h2 className="text-xl font-bold text-white">Partner Integration & Embed SDK</h2>
+            <p className="mt-1 text-sm text-zinc-400">
+              Integrate the InboxExorcist scanner widget directly onto your blog, Substack, productivity platform, or partner portal.
+            </p>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Option A: iframe */}
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5 flex flex-col justify-between">
+              <div>
+                <span className="rounded-md bg-amber-500/10 px-2.5 py-1 text-xs font-bold text-amber-400">
+                  Option 1: Drop-In iFrame Widget
+                </span>
+                <p className="mt-2 text-xs text-zinc-300">
+                  Embeds the responsive radar card cleanly into any web page or CMS without scripts.
+                </p>
+                <pre className="mt-4 overflow-x-auto rounded-xl bg-black/60 p-3 font-mono text-xs text-amber-300">
+                  {iframeSnippet}
+                </pre>
+              </div>
+              <button
+                type="button"
+                onClick={() => copyCode(iframeSnippet, "iframe")}
+                className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-amber-500 text-xs font-bold text-zinc-950 hover:bg-amber-400 transition"
+              >
+                {copiedSnippet === "iframe" ? "✓ Copied HTML Snippet!" : "Copy iFrame Snippet"}
+              </button>
+            </div>
+
+            {/* Option B: Floating Script Badge */}
+            <div className="rounded-2xl border border-white/10 bg-zinc-900/70 p-5 flex flex-col justify-between">
+              <div>
+                <span className="rounded-md bg-cyan-500/10 px-2.5 py-1 text-xs font-bold text-cyan-400">
+                  Option 2: Floating Script Badge
+                </span>
+                <p className="mt-2 text-xs text-zinc-300">
+                  Adds a floating &quot;Exorcise Gmail Noise&quot; action launcher to the bottom corner of your site.
+                </p>
+                <pre className="mt-4 overflow-x-auto rounded-xl bg-black/60 p-3 font-mono text-xs text-cyan-300">
+                  {scriptSnippet}
+                </pre>
+              </div>
+              <button
+                type="button"
+                onClick={() => copyCode(scriptSnippet, "script")}
+                className="mt-4 inline-flex h-10 items-center justify-center rounded-xl border border-cyan-500/40 bg-cyan-500/10 text-xs font-bold text-cyan-300 hover:bg-cyan-500/20 transition"
+              >
+                {copiedSnippet === "script" ? "✓ Copied Script Tag!" : "Copy Script Tag"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 5: Data & Privacy */}
       {activeTab === "data" && (
         <div className="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
           <div>
@@ -298,7 +375,7 @@ export function SettingsClient() {
         </div>
       )}
 
-      {/* Tab 5: Diagnostics */}
+      {/* Tab 6: Diagnostics */}
       {activeTab === "diagnostics" && (
         <div className="glass-card rounded-3xl p-6 sm:p-8 space-y-6">
           <div>

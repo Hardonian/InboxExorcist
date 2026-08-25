@@ -71,6 +71,15 @@ try {
   const preview = await fetch(`${baseUrl}/preview/mock`);
   assert.equal(preview.status, 200);
   assert.match(await preview.text(), /Preview the exorcism/);
+
+  const widget = await fetch(`${baseUrl}/widget`);
+  assert.equal(widget.status, 200);
+  assert.match(await widget.text(), /Gmail Noise Radar/);
+
+  const embedScript = await fetch(`${baseUrl}/api/widget/embed.js`);
+  assert.equal(embedScript.status, 200);
+  assert.equal(embedScript.headers.get("content-type"), "application/javascript; charset=utf-8");
+  assert.match(await embedScript.text(), /inbox-exorcist-floating-btn/);
 } catch (error) {
   console.error(output);
   throw error;
