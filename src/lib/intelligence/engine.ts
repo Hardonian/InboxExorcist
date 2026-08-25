@@ -7,6 +7,24 @@ import type {
   EdgeCase,
   Decision
 } from './types.ts';
+import configJson from '../../../intelligence/v1/config.json' with { type: 'json' };
+import safetyRulesJson from '../../../intelligence/v1/safety_rules.json' with { type: 'json' };
+import senderPatternsJson from '../../../intelligence/v1/sender_patterns.json' with { type: 'json' };
+import edgeCasesJson from '../../../intelligence/v1/edge_cases.json' with { type: 'json' };
+
+let defaultEngineInstance: IntelligenceEngine | null = null;
+
+export function getDefaultIntelligenceEngine(): IntelligenceEngine {
+  if (!defaultEngineInstance) {
+    defaultEngineInstance = new IntelligenceEngine(
+      configJson as unknown as IntelligenceConfig,
+      ((senderPatternsJson as unknown as { patterns: SenderPattern[] }).patterns) || [],
+      ((safetyRulesJson as unknown as { rules: SafetyRule[] }).rules) || [],
+      ((edgeCasesJson as unknown as { cases: EdgeCase[] }).cases) || []
+    );
+  }
+  return defaultEngineInstance;
+}
 
 export class IntelligenceEngine {
   private config: IntelligenceConfig;

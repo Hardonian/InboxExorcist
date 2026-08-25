@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Navbar } from "@/components/Navbar";
+import { Footer } from "@/components/Footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "InboxExorcist | One-click Gmail quieting",
+  title: "InboxExorcist | One-Click Gmail Quieting & Exorcism",
   description:
-    "Find noisy promo senders, quiet them safely, and undo anytime. No deleting by default.",
+    "Banish noisy promo demons, quiet them safely with reversible Gmail filters, and undo anytime. Zero email body storage.",
 };
 
 export default function RootLayout({
@@ -28,7 +30,11 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-[#090a0f] text-[#f3f4f6]">
+        <Navbar />
+        <div className="flex-1">{children}</div>
+        <Footer />
+      </body>
     </html>
   );
 }

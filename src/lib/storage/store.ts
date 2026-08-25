@@ -31,6 +31,8 @@ export type AppStore = {
   listActiveFilters(userId: string): Promise<GmailFilterRecord[]>;
   markFilterDeleted(filterRecordId: string, userId: string): Promise<void>;
   listAllowlist(userId: string): Promise<string[]>;
+  addAllowlist(userId: string, domain: string): Promise<void>;
+  removeAllowlist(userId: string, domain: string): Promise<void>;
   listBlocklist(userId: string): Promise<string[]>;
   deleteUserData(userId: string): Promise<void>;
 };

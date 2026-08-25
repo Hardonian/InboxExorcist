@@ -170,6 +170,19 @@ export class MemoryStore implements AppStore {
     return [...(data().allowlist.get(userId) || new Set<string>())];
   }
 
+  async addAllowlist(userId: string, domain: string) {
+    const list = data().allowlist.get(userId) || new Set<string>();
+    list.add(domain.toLowerCase().trim());
+    data().allowlist.set(userId, list);
+  }
+
+  async removeAllowlist(userId: string, domain: string) {
+    const list = data().allowlist.get(userId);
+    if (list) {
+      list.delete(domain.toLowerCase().trim());
+    }
+  }
+
   async listBlocklist(userId: string) {
     return [...(data().blocklist.get(userId) || new Set<string>())];
   }

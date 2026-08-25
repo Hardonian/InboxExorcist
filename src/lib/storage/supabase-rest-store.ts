@@ -259,6 +259,25 @@ export class SupabaseRestStore implements AppStore {
     return rows.map((row) => row.domain);
   }
 
+  async addAllowlist(userId: string, domain: string) {
+    await request("user_allowlist", {
+      method: "POST",
+      prefer: "resolution=merge-duplicates",
+      body: {
+        user_id: userId,
+        domain: domain.toLowerCase().trim(),
+        created_at: new Date().toISOString(),
+      },
+    });
+  }
+
+  async removeAllowlist(userId: string, domain: string) {
+    await request("user_allowlist", {
+      method: "DELETE",
+      query: `?user_id=eq.${encodeURIComponent(userId)}&domain=eq.${encodeURIComponent(domain.toLowerCase().trim())}`,
+    });
+  }
+
   async listBlocklist(userId: string) {
     const rows = await request<{ domain: string }>("user_blocklist", {
       query: `?user_id=eq.${encodeURIComponent(userId)}&select=domain`,

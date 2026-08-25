@@ -1,4 +1,5 @@
 import type { Classification, ProposedAction } from "../domain.ts";
+import { getDefaultIntelligenceEngine } from "../intelligence/engine.ts";
 
 export type SenderEvidence = {
   senderDomain: string;
@@ -136,6 +137,19 @@ export function classifySender(evidence: SenderEvidence): ClassificationResult {
       evidence.senderDomain.endsWith(`.${domain}`),
   );
 
+  // 1. Evaluate with Deep Intelligence Engine (Safety rules & edge cases)
+  const intelEngine = getDefaultIntelligenceEngine();
+  const intelReport = intelEngine.analyze({
+    sender: evidence.senderEmail || evidence.senderDisplayName || evidence.senderDomain,
+    subject: (evidence.subjectHints || []).join(" "),
+    body: "",
+    headers: {
+      ...(evidence.hasListUnsubscribe ? { "List-Unsubscribe": "true" } : {}),
+      ...(evidence.recentHumanReply ? { "In-Reply-To": "true" } : {}),
+    },
+    has_attachments: false,
+  });
+
   if (evidence.hasListUnsubscribe) {
     score += 25;
     reasons.push("List-Unsubscribe header exists");
@@ -172,32 +186,65 @@ export function classifySender(evidence: SenderEvidence): ClassificationResult {
   let protectedReason: string | undefined;
   let classification: Classification | undefined;
 
+  // Check intelligence engine safety override
+  if (intelReport.decision === "keep" && intelReport.matching_rules.length > 0) {
+    if (intelReport.category === "finance") {
+      score -= 40;
+      protectedReason = intelReport.explanation || "Financial or tax sender";
+      classification = "FINANCIAL_SAFE_SKIP";
+      reasons.push(`Intelligence rule: ${intelReport.explanation}`);
+    } else if (intelReport.category === "security") {
+      score -= 40;
+      protectedReason = intelReport.explanation || "Account security sender";
+      classification = "ACCOUNT_SECURITY_SAFE_SKIP";
+      reasons.push(`Intelligence rule: ${intelReport.explanation}`);
+    } else if (intelReport.category === "government") {
+      score -= 40;
+      protectedReason = "Government or tax authority";
+      classification = "ACCOUNT_SECURITY_SAFE_SKIP";
+      reasons.push(`Intelligence rule: ${intelReport.explanation}`);
+    } else if (intelReport.category === "healthcare" || intelReport.category === "legal") {
+      score -= 30;
+      protectedReason = `Protected ${intelReport.category} communication`;
+      classification = "UNKNOWN_REVIEW";
+      reasons.push(`Intelligence rule: ${intelReport.explanation}`);
+    }
+  }
+
   if (includesAny(text, financialTerms)) {
     score -= 40;
-    protectedReason = "Financial or tax sender";
-    classification = "FINANCIAL_SAFE_SKIP";
-    reasons.push("Financial/security-sensitive keyword");
+    protectedReason = protectedReason || "Financial or tax sender";
+    classification = classification || "FINANCIAL_SAFE_SKIP";
+    if (!reasons.some((r) => r.includes("Financial"))) {
+      reasons.push("Financial/security-sensitive keyword");
+    }
   }
 
   if (includesAny(text, securityTerms)) {
     score -= 40;
     protectedReason = protectedReason || "Account security sender";
     classification = "ACCOUNT_SECURITY_SAFE_SKIP";
-    reasons.push("Password, login, or security keyword");
+    if (!reasons.some((r) => r.includes("security keyword"))) {
+      reasons.push("Password, login, or security keyword");
+    }
   }
 
   if (includesAny(text, transactionalTerms)) {
     score -= 30;
     protectedReason = protectedReason || "Transactional sender";
     classification = classification || "TRANSACTIONAL_SAFE_SKIP";
-    reasons.push("Receipt, invoice, shipping, or order keyword");
+    if (!reasons.some((r) => r.includes("Receipt"))) {
+      reasons.push("Receipt, invoice, shipping, or order keyword");
+    }
   }
 
   if (includesAny(text, healthcareLegalGovTerms)) {
     score -= 30;
     protectedReason = protectedReason || "Healthcare, legal, school, employer, or government sender";
     classification = classification || "UNKNOWN_REVIEW";
-    reasons.push("Protected institution keyword");
+    if (!reasons.some((r) => r.includes("institution keyword"))) {
+      reasons.push("Protected institution keyword");
+    }
   }
 
   if (evidence.recentHumanReply || evidence.userEngaged) {
