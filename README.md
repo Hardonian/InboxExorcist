@@ -1,5 +1,9 @@
 # InboxExorcist
 
+<!-- BEGIN: REPO HERO -->
+![InboxExorcist — hero generated locally on the GPU stack](assets/repo-hero.png)
+<!-- END: REPO HERO -->
+
 InboxExorcist is a one-function B2C app:
 
 Connect Gmail → identify junk/promotional senders → unsubscribe where safe → create reversible Gmail filters/labels to silence future noise.
